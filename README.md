@@ -21,7 +21,7 @@ Travel Tracker is a web application that allows users to keep track of countries
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/travel-tracker.git
+   git clone https://github.com/RUBBOSS/travel-tracker.git
    cd travel-tracker
    ```
 
