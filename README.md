@@ -85,9 +85,6 @@ Travel Tracker is a web application that allows users to keep track of countries
 
 If you'd like to contribute to this project, please fork the repository and submit a pull request. All contributions are welcome!
 
-## License
-
-This project is licensed under the MIT License.
 
 ## Acknowledgments
 
