@@ -8,12 +8,17 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Use Supabase PostgreSQL connection
+// Use Supabase PostgreSQL connection with explicit configuration
 const db = new pg.Client({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  // Force IPv4 and connection timeout
+  connectionTimeoutMillis: 10000,
+  query_timeout: 30000,
+  statement_timeout: 30000,
+  idle_in_transaction_session_timeout: 30000
 });
 
 // Connect to database with error handling
@@ -29,10 +34,7 @@ app.use(express.static("public"));
 
 let currentUserId = 1;
 
-let users = [
-  { id: 1, name: "Angela", color: "#008080" },
-  { id: 2, name: "Jack", color: "#B0E0E6" },
-];
+let users = [];
 
 async function checkVisisted() {
   const result = await db.query(
@@ -49,13 +51,38 @@ async function checkVisisted() {
 async function getCurrentUser() {
   const result = await db.query("SELECT * FROM users");
   users = result.rows;
-  return users.find((user) => user.id == currentUserId);
+  
+  // If no users exist, return null
+  if (users.length === 0) {
+    return null;
+  }
+  
+  // If currentUserId doesn't exist, set it to the first user
+  const currentUser = users.find((user) => user.id == currentUserId);
+  if (!currentUser && users.length > 0) {
+    currentUserId = users[0].id;
+    return users[0];
+  }
+  
+  return currentUser;
 }
 
 app.get("/", async (req, res) => {
   try {
-    const countries = await checkVisisted();
     const currentUser = await getCurrentUser();
+    
+    // If no users exist, render with default values
+    if (!currentUser) {
+      res.render("index.ejs", {
+        countries: [],
+        total: 0,
+        users: [],
+        color: "#008080", // Default color
+      });
+      return;
+    }
+    
+    const countries = await checkVisisted();
     res.render("index.ejs", {
       countries: countries,
       total: countries.length,
@@ -70,6 +97,11 @@ app.get("/", async (req, res) => {
 app.post("/add", async (req, res) => {
   const input = req.body["country"];
   const currentUser = await getCurrentUser();
+  
+  // If no users exist, redirect to create a new user
+  if (!currentUser) {
+    return res.render("new.ejs");
+  }
 
   try {
     const result = await db.query(
@@ -103,7 +135,7 @@ app.post("/add", async (req, res) => {
       res.render("index.ejs", {
         countries: countries,
         users: users,
-        color: currentUser.color,
+        color: currentUser ? currentUser.color : "#008080",
         total: countries.length,
         error: "Country has already been added, try again.",
       });
@@ -115,7 +147,7 @@ app.post("/add", async (req, res) => {
     res.render("index.ejs", {
       countries: countries,
       users: users,
-      color: currentUser.color,
+      color: currentUser ? currentUser.color : "#008080",
       total: countries.length,
       error: "Country name does not exist, try again.",
     });
@@ -143,6 +175,33 @@ app.post("/new", async (req, res) => {
   currentUserId = id;
 
   res.redirect("/");
+});
+
+app.post("/delete", async (req, res) => {
+  const userIdToDelete = req.body.userId;
+  
+  try {
+    // First, delete all visited countries for this user
+    await db.query("DELETE FROM visited_countries WHERE user_id = $1", [userIdToDelete]);
+    
+    // Then delete the user
+    await db.query("DELETE FROM users WHERE id = $1", [userIdToDelete]);
+    
+    // If the deleted user was the current user, switch to another user or reset
+    if (currentUserId == userIdToDelete) {
+      const result = await db.query("SELECT * FROM users LIMIT 1");
+      if (result.rows.length > 0) {
+        currentUserId = result.rows[0].id;
+      } else {
+        currentUserId = 1; // Reset to default when no users exist
+      }
+    }
+    
+    res.redirect("/");
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).send('Error deleting user');
+  }
 });
 
 app.listen(port, () => {

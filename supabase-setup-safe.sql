@@ -1,3 +1,4 @@
+-- Safe Supabase Setup Script - handles existing data
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -20,7 +21,7 @@ CREATE TABLE IF NOT EXISTS visited_countries (
     UNIQUE(country_id, user_id)
 );
 
--- Insert some sample countries (we'll add more later)
+-- Insert countries with conflict handling (only insert if they don't exist)
 INSERT INTO countries (country_code, country_name) VALUES 
 ('AF', 'Afghanistan'), 
 ('AL', 'Albania'),
@@ -213,7 +214,7 @@ INSERT INTO countries (country_code, country_name) VALUES
 ('VN', 'Vietnam'),
 ('YE', 'Yemen'),
 ('ZM', 'Zambia'),
-('ZW', 'Zimbabwe');
+('ZW', 'Zimbabwe')
+ON CONFLICT (country_code) DO NOTHING;
 
--- Insert some sample users
-INSERT INTO users (name, color) VALUES ('Angela', '#008080'), ('Jack', '#B0E0E6');
+
