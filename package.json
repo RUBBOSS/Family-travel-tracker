@@ -1,19 +1,26 @@
 {
-  "name": "8.3-travel-tracker",
+  "name": "family-travel-tracker",
   "version": "1.0.0",
-  "description": "",
+  "description": "Track countries visited by family members on a world map",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "bash deploy-railway.sh"
   },
-  "keywords": [],
+  "keywords": ["travel", "map", "family", "countries", "tracker"],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.20.2",
+    "dotenv": "^16.5.0",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
     "pg": "^8.11.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

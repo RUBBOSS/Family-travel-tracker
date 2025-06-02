@@ -1,28 +1,28 @@
-# Travel Tracker
+# Family Travel Tracker
 
-Travel Tracker is a web application that allows users to keep track of countries they have visited. Users can add new countries to their list, and the total number of visited countries will be displayed on a map. The app also supports multiple users, each with their own unique color-coded profile.
+Family Travel Tracker is a web application that allows families to keep track of countries they have visited. Users can add family members, each with their own unique color, and track which countries they've visited on a color-coded world map.
 
 ## Features
 
 - **Add Visited Countries:** Users can input the name of a country they have visited, and it will be highlighted on the world map.
-- **User Profiles:** Multiple users can be added, each with their own color to represent their visited countries.
-- **Map Visualization:** Visited countries are highlighted on a world map.
+- **Family Member Profiles:** Multiple family members can be added, each with their own color to represent their visited countries.
+- **Map Visualization:** Visited countries are highlighted on a world map with the family member's chosen color.
 - **Error Handling:** The app handles cases where the country does not exist in the database or has already been added.
 
 ## Technology Stack
 
 - **Frontend:** HTML, CSS, EJS (Embedded JavaScript)
 - **Backend:** Node.js, Express.js
-- **Database:** PostgreSQL
-- **Dependencies:** `body-parser`, `ejs`, `express`, `pg`
+- **Database:** Supabase (PostgreSQL)
+- **Dependencies:** `body-parser`, `ejs`, `express`, `pg`, `dotenv`
 
-## Installation
+## Local Installation
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/RUBBOSS/travel-tracker.git
-   cd travel-tracker
+   git clone https://github.com/RUBBOSS/family-travel-tracker.git
+   cd family-travel-tracker
    ```
 
 2. Install dependencies:
@@ -31,23 +31,26 @@ Travel Tracker is a web application that allows users to keep track of countries
    npm install
    ```
 
-3. Set up PostgreSQL database:
+3. Set up environment variables:
+   Create a `.env` file with the following:
 
-   - Create a PostgreSQL database named `world`.
-   - Use the provided SQL scripts to create the required tables: `users` and `visited_countries`.
-
-4. Update the database connection details in `index.js`:
-
-   ```javascript
-   const db = new pg.Client({
-     user: "your-username",
-     host: "localhost",
-     database: "world",
-     password: "your-password",
-     port: 5432,
-   });
-   db.connect();
    ```
+   # Supabase Database
+   SUPABASE_HOST=your-supabase-host
+   SUPABASE_DB=postgres
+   SUPABASE_USER=postgres
+   SUPABASE_PASSWORD=your-password
+   SUPABASE_URL=your-supabase-url
+   SUPABASE_KEY=your-supabase-key
+   
+   # For deployment
+   PORT=3000
+   NODE_ENV=development
+   ```
+   
+4. Set up Supabase:
+   - Create a Supabase project
+   - Run the SQL in `supabase-setup.sql` in the Supabase SQL Editor
 
 5. Start the application:
 
@@ -57,28 +60,66 @@ Travel Tracker is a web application that allows users to keep track of countries
 
 6. Open your browser and navigate to `http://localhost:3000`.
 
+## Deployment
+
+### Deploy to Railway (Recommended)
+
+1. Create a Railway account at [railway.app](https://railway.app)
+2. Install Railway CLI:
+   ```bash
+   npm i -g @railway/cli
+   ```
+3. Login to Railway:
+   ```bash
+   railway login
+   ```
+4. Initialize Railway:
+   ```bash
+   railway init
+   ```
+5. Deploy:
+   ```bash
+   railway up
+   ```
+
+### Deploy to Render
+
+1. Create a Render account at [render.com](https://render.com)
+2. Create a new Web Service
+3. Connect your GitHub repository
+4. Set the following:
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+5. Add environment variables from your `.env` file
+6. Deploy
+
 ## Usage
 
 1. **Add a Family Member:**
    - Click "Add Family Member" and fill out the form with the person's name and preferred color.
    
 2. **Track Visited Countries:**
-   - Select a user and enter the name of a country they have visited.
-   - The country will be highlighted on the world map.
+   - Select a family member and enter the name of a country they have visited.
+   - The country will be highlighted on the world map with their color.
 
 3. **View Total Countries:**
-   - The total number of countries visited by the selected user is displayed at the bottom of the page.
+   - The total number of countries visited by the selected family member is displayed at the bottom of the page.
 
 ## Database Structure
 
 - **Users Table:**
   - `id`: Integer, Primary Key
-  - `name`: Text, Name of the user
-  - `color`: Text, Color associated with the user
+  - `name`: Text, Name of the family member
+  - `color`: Text, Color associated with the family member
+
+- **Countries Table:**
+  - `id`: Integer, Primary Key
+  - `country_code`: Text, Two-letter country code
+  - `country_name`: Text, Name of the country
 
 - **Visited Countries Table:**
   - `id`: Integer, Primary Key
-  - `country_code`: Text, Country code of the visited country
+  - `country_id`: Integer, Foreign Key referencing the `countries` table
   - `user_id`: Integer, Foreign Key referencing the `users` table
 
 ## Contributing
