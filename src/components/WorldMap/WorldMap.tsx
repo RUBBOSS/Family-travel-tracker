@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUserContext } from '@/context/UserContext';
 import { useVisitedCountries } from '@/hooks/useVisitedCountries';
+import { useCountries } from '@/hooks/useCountries';
 import { motion } from 'framer-motion';
 import { MapPin, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -21,17 +22,17 @@ const DynamicWorldMap = dynamic(() => import('@/components/WorldMap/WorldMapSvg'
 export default function WorldMap() {
   const { currentUser } = useUserContext();
   const { visitedCountries, visitedCountryCodes, fetchVisitedCountries, isLoading } = useVisitedCountries();
+  const { totalCount: totalCountries } = useCountries();
   const [isMapLoaded, setIsMapLoaded] = useState(false);
     useEffect(() => {
     if (currentUser) {
       fetchVisitedCountries();
     }
   }, [currentUser, fetchVisitedCountries]);
-
   const visitedPercentage = useMemo(() => {
-    const totalCountries = 250; // Approximate number of countries in the world
+    if (totalCountries === 0) return '0.0';
     return ((visitedCountries.length / totalCountries) * 100).toFixed(1);
-  }, [visitedCountries.length]);
+  }, [visitedCountries.length, totalCountries]);
 
   return (
     <div className="relative">

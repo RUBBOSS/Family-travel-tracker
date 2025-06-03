@@ -1,45 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
+import { useCountries } from '@/hooks/useCountries';
 
 interface Country {
-  code: string;
-  name: string;
+  id: number;
+  country_code: string;
+  country_name: string;
 }
 
-const countries: Country[] = [
-  { code: 'US', name: 'United States' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'MX', name: 'Mexico' },
-  { code: 'BR', name: 'Brazil' },
-  { code: 'AR', name: 'Argentina' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'RU', name: 'Russia' },
-  { code: 'CN', name: 'China' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'IN', name: 'India' },
-  { code: 'AU', name: 'Australia' },
-];
-
 interface CountrySearchProps {
-  onCountrySelect?: (countryCode: string) => void;
+  onCountrySelect?: (countryId: number) => void;
 }
 
 export default function CountrySearch({ onCountrySelect }: CountrySearchProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const { countries, searchCountries, isLoading } = useCountries();
+  const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
+  // Update filtered countries when query changes
+  useEffect(() => {
+    if (query.trim()) {
+      const filtered = countries.filter(country =>
+        country.country_name.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredCountries(filtered);
+    } else {
+      setFilteredCountries([]);
+    }
+  }, [query, countries]);
 
-  const filteredCountries = countries.filter(country =>
-    country.name.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const handleCountrySelect = (countryCode: string) => {
-    onCountrySelect?.(countryCode);
+  const handleCountrySelect = (countryId: number) => {
+    onCountrySelect?.(countryId);
     setQuery('');
     setIsOpen(false);
   };
@@ -60,18 +53,17 @@ export default function CountrySearch({ onCountrySelect }: CountrySearchProps) {
           onFocus={() => setIsOpen(true)}
           className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
-      </div>
-
-      {isOpen && query && (
+      </div>      {isOpen && query && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-          {filteredCountries.length > 0 ? (
-            filteredCountries.map((country) => (
-              <button
-                key={country.code}
-                onClick={() => handleCountrySelect(country.code)}
+          {isLoading ? (
+            <div className="px-4 py-2 text-slate-400">Searching...</div>
+          ) : filteredCountries.length > 0 ? (
+            filteredCountries.map((country) => (              <button
+                key={country.id}
+                onClick={() => handleCountrySelect(country.id)}
                 className="w-full text-left px-4 py-2 text-white hover:bg-slate-700 transition-colors duration-200 first:rounded-t-lg last:rounded-b-lg"
               >
-                {country.name}
+                {country.country_name}
               </button>
             ))
           ) : (

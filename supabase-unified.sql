@@ -469,7 +469,62 @@ INSERT INTO countries (country_code, country_name, flag_url, population, capital
 ('ZW', 'Zimbabwe', 'https://flagcdn.com/w320/zw.png', 14862924, 'Harare', 'Africa', 'Eastern Africa');
 
 -- ========================================
--- 14. VERIFICATION AND SUCCESS MESSAGE
+-- 14. CREATE FAMILY MEMBERS TABLE AND UPDATE SCHEMA
+-- ========================================
+
+-- Create family_members table
+CREATE TABLE IF NOT EXISTS public.family_members (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  avatar_color VARCHAR(7) DEFAULT '#3B82F6',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_family_members_user_id ON public.family_members(user_id);
+
+-- Enable RLS
+ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+DROP POLICY IF EXISTS "Users can manage their own family members" ON public.family_members;
+CREATE POLICY "Users can manage their own family members" ON public.family_members
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Add family_member_id column to visited_countries if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'visited_countries' 
+    AND column_name = 'family_member_id'
+    AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE public.visited_countries 
+    ADD COLUMN family_member_id INTEGER REFERENCES public.family_members(id) ON DELETE CASCADE;
+    
+    -- Create index for the new column
+    CREATE INDEX idx_visited_countries_family_member_id ON public.visited_countries(family_member_id);
+  END IF;
+END $$;
+
+-- Update the unique constraint to include family_member_id
+-- First drop the old constraint
+ALTER TABLE public.visited_countries DROP CONSTRAINT IF EXISTS visited_countries_user_id_country_id_key;
+
+-- Add new unique constraint that allows the same country to be visited by different family members
+-- But prevents duplicate entries for the same user/family member/country combination
+CREATE UNIQUE INDEX IF NOT EXISTS visited_countries_unique_idx 
+ON public.visited_countries (user_id, COALESCE(family_member_id, 0), country_id);
+
+-- Grant necessary permissions
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.family_members TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE family_members_id_seq TO authenticated;
+
+-- ========================================
+-- 15. VERIFICATION AND SUCCESS MESSAGE
 -- ========================================
 DO $$
 BEGIN
@@ -477,7 +532,7 @@ BEGIN
     RAISE NOTICE 'DATABASE SETUP COMPLETED SUCCESSFULLY!';
     RAISE NOTICE '========================================';
     RAISE NOTICE 'Countries inserted: % rows', (SELECT COUNT(*) FROM countries);
-    RAISE NOTICE 'Tables created: countries, user_profiles, visited_countries';
+    RAISE NOTICE 'Tables created: countries, user_profiles, visited_countries, family_members';
     RAISE NOTICE 'Functions created: handle_new_user, generate_unique_username, get_user_stats, get_user_countries_by_region, exec_sql, create_user_profiles_table';
     RAISE NOTICE 'Triggers created: on_auth_user_created, update_user_profiles_updated_at';
     RAISE NOTICE 'RLS enabled on all tables with appropriate policies';
@@ -491,5 +546,5 @@ SELECT 'Schema verification complete' as status;
 SELECT table_name, column_name, data_type, is_nullable 
 FROM information_schema.columns 
 WHERE table_schema = 'public' 
-AND table_name IN ('countries', 'user_profiles', 'visited_countries')
+AND table_name IN ('countries', 'user_profiles', 'visited_countries', 'family_members')
 ORDER BY table_name, ordinal_position;

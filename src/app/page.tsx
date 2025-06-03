@@ -13,11 +13,23 @@ import AddFamilyMemberDialog from '@/components/AddFamilyMemberDialog';
 import AuthForm from '@/components/AuthForm';
 import { SchemaSetupGuide } from '@/components/SchemaSetupGuide';
 import { useUserContext } from '@/context/UserContext';
+import { useVisitedCountries } from '@/hooks/useVisitedCountries';
+import { useFamilyMembers } from '@/hooks/useFamilyMembers';
 import { supabase } from '@/utils/supabaseClient';
 
 export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { currentUser, isLoading } = useUserContext();
+  const { visitedCountries, addCountry, removeCountry } = useVisitedCountries();
+  const { addFamilyMember } = useFamilyMembers();
+
+  const handleCountrySelect = async (countryId: number) => {
+    try {
+      await addCountry(countryId);
+    } catch (error) {
+      console.error('Failed to add country:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -27,6 +39,11 @@ export default function Home() {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+
+  const handleMemberAdded = () => {
+    // The FamilyMemberTabs component will automatically update via the useFamilyMembers hook
+    // We could trigger a refresh here if needed
   };
 
   if (isLoading) return null;
@@ -106,11 +123,10 @@ export default function Home() {
           </div>
           <FamilyMemberTabs />
         </section>
-        
-        {/* Country Search */}
+          {/* Country Search */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
           <h2 className="text-xl font-semibold mb-4 text-white">Add a Country</h2>
-          <CountrySearch />
+          <CountrySearch onCountrySelect={handleCountrySelect} />
         </section>
         
         {/* Interactive World Map */}
@@ -118,16 +134,27 @@ export default function Home() {
           <h2 className="text-xl font-semibold mb-4 text-white">World Map</h2>
           <WorldMap />
         </section>
-        
-        {/* Country Table */}
+          {/* Country Table */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
           <h2 className="text-xl font-semibold mb-4 text-white">Visited Countries</h2>
-          <CountryTable />
+          <CountryTable 
+            countries={visitedCountries.map(country => ({
+              id: country.id.toString(),
+              countryCode: country.countryCode,
+              countryName: country.countryName,
+              visitDate: country.visitDate,
+              notes: country.notes || ''
+            }))}
+            onRemoveCountry={(countryId) => removeCountry(parseInt(countryId))}
+          />
         </section>
       </div>
-      
-      {/* Add Family Member Dialog */}
-      <AddFamilyMemberDialog isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} />
+        {/* Add Family Member Dialog */}      <AddFamilyMemberDialog 
+        isOpen={isDialogOpen} 
+        onClose={() => setIsDialogOpen(false)}
+        onMemberAdded={handleMemberAdded}
+        addFamilyMember={addFamilyMember}
+      />
     </main>
   );
 }

@@ -35,9 +35,19 @@ export const userProfiles = pgTable('user_profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });
 
+export const familyMembers = pgTable('family_members', {
+  id: serial('id').primaryKey(),
+  userId: uuid('user_id').notNull(),
+  name: varchar('name', { length: 100 }).notNull(),
+  avatarColor: varchar('avatar_color', { length: 7 }).default('#3B82F6'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+});
+
 export const visitedCountries = pgTable('visited_countries', {
   id: serial('id').primaryKey(),
   userId: uuid('user_id').notNull(),
+  familyMemberId: integer('family_member_id'),
   countryId: integer('country_id').notNull(),
   visitDate: timestamp('visit_date', { withTimezone: true }).defaultNow().notNull(),
   notes: text('notes'),
@@ -51,6 +61,9 @@ export type NewCountry = typeof countries.$inferInsert;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type NewUserProfile = typeof userProfiles.$inferInsert;
 
+export type FamilyMember = typeof familyMembers.$inferSelect;
+export type NewFamilyMember = typeof familyMembers.$inferInsert;
+
 export type VisitedCountry = typeof visitedCountries.$inferSelect;
 export type NewVisitedCountry = typeof visitedCountries.$inferInsert;
 
@@ -60,6 +73,15 @@ export const countriesRelations = relations(countries, ({ many }) => ({
 }));
 
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
+  visitedCountries: many(visitedCountries),
+  familyMembers: many(familyMembers),
+}));
+
+export const familyMembersRelations = relations(familyMembers, ({ one, many }) => ({
+  user: one(userProfiles, {
+    fields: [familyMembers.userId],
+    references: [userProfiles.id],
+  }),
   visitedCountries: many(visitedCountries),
 }));
 
@@ -71,6 +93,10 @@ export const visitedCountriesRelations = relations(visitedCountries, ({ one }) =
   userProfile: one(userProfiles, {
     fields: [visitedCountries.userId],
     references: [userProfiles.id],
+  }),
+  familyMember: one(familyMembers, {
+    fields: [visitedCountries.familyMemberId],
+    references: [familyMembers.id],
   }),
 }));
 
@@ -342,6 +368,32 @@ BEGIN
 END
 $$;
 
+-- Check if family_members table exists, create if not
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'family_members') THEN
+    CREATE TABLE public.family_members (
+      id SERIAL PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+      name VARCHAR(100) NOT NULL,
+      avatar_color VARCHAR(7) DEFAULT '#3B82F6',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    
+    -- Create indexes for better performance
+    CREATE INDEX idx_family_members_user_id ON public.family_members(user_id);
+    
+    -- Enable RLS
+    ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
+    
+    -- Create RLS policies
+    CREATE POLICY "Users can manage their own family members" ON public.family_members
+      FOR ALL USING (auth.uid() = user_id);
+  END IF;
+END
+$$;
+
 -- Check if visited_countries table exists, create if not
 DO $$
 BEGIN
@@ -349,15 +401,17 @@ BEGIN
     CREATE TABLE public.visited_countries (
       id SERIAL PRIMARY KEY,
       user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+      family_member_id INTEGER REFERENCES public.family_members(id) ON DELETE CASCADE,
       country_id INTEGER NOT NULL REFERENCES public.countries(id) ON DELETE CASCADE,
       visit_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       notes TEXT,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      UNIQUE(user_id, country_id)
+      UNIQUE(user_id, family_member_id, country_id)
     );
     
     -- Create indexes for better performance
     CREATE INDEX idx_visited_countries_user_id ON public.visited_countries(user_id);
+    CREATE INDEX idx_visited_countries_family_member_id ON public.visited_countries(family_member_id);
     CREATE INDEX idx_visited_countries_country_id ON public.visited_countries(country_id);
     
     -- Enable RLS
@@ -365,6 +419,29 @@ BEGIN
     
     -- Create RLS policies
     CREATE POLICY "Users can manage their own visited countries" ON public.visited_countries
+      FOR ALL USING (auth.uid() = user_id);
+  END IF;
+END
+$$;
+
+-- Check if family_members table exists, create if not
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'family_members') THEN
+    CREATE TABLE public.family_members (
+      id SERIAL PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+      name VARCHAR(100) NOT NULL,
+      avatar_color VARCHAR(7) DEFAULT '#3B82F6',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    
+    -- Enable RLS
+    ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
+    
+    -- Create RLS policies
+    CREATE POLICY "Users can manage their own family members" ON public.family_members
       FOR ALL USING (auth.uid() = user_id);
   END IF;
 END
