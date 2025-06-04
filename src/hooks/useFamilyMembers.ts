@@ -12,12 +12,14 @@ export function useFamilyMembers() {
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [isDeleting, setIsDeleting] = useState(false); // Flag to prevent concurrent operations
   const fetchFamilyMembers = useCallback(async () => {
-    // Don't fetch if user is not authenticated
-    if (!currentUser) {
-      setFamilyMembers([]);
-      setLoading(false);
+    // Don't fetch if user is not authenticated or if we're in the middle of a delete operation
+    if (!currentUser || isDeleting) {
+      if (!currentUser) {
+        setFamilyMembers([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -55,7 +57,7 @@ export function useFamilyMembers() {
       setError(err instanceof Error ? err.message : 'Failed to fetch family members');    } finally {
       setLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, isDeleting]);
 
   const addFamilyMember = useCallback(async (name: string, avatarColor: string) => {
     if (!currentUser) return;
@@ -88,20 +90,33 @@ export function useFamilyMembers() {
       console.error('Error adding family member:', err);
       throw err;
     }
-  }, [currentUser]);
-
-  const deleteFamilyMember = useCallback(async (id: number) => {
-    if (!currentUser) return;
+  }, [currentUser]);  const deleteFamilyMember = useCallback(async (id: number) => {
+    if (!currentUser || isDeleting) return;
     
     try {
+      console.log('Attempting to delete family member:', id);
+      setIsDeleting(true); // Set flag to prevent concurrent operations
+      
+      // Optimistically update UI first
+      setFamilyMembers(prev => {
+        const filtered = prev.filter(member => member.id !== id);
+        console.log('Optimistic update - filtered family members:', filtered);
+        return filtered;
+      });
+      
       // Get the current user's session for the auth token
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       
       if (!accessToken) {
+        console.error('No access token available');
+        // Revert optimistic update on error
+        setIsDeleting(false);
+        await fetchFamilyMembers();
         throw new Error('Authentication error');
       }
       
+      console.log('Making DELETE request to API...');
       const response = await fetch(`/api/family-members?id=${id}`, {
         method: 'DELETE',
         headers: {
@@ -109,24 +124,41 @@ export function useFamilyMembers() {
         }
       });
 
+      console.log('DELETE response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('DELETE request failed:', errorData);
+        // Revert optimistic update on error
+        setIsDeleting(false);
+        await fetchFamilyMembers();
         throw new Error(errorData.error || 'Failed to delete family member');
-      }      setFamilyMembers(prev => prev.filter(member => member.id !== id));
+      }
+
+      const result = await response.json();
+      console.log('DELETE request successful:', result);
+      console.log('Family member deleted successfully');
     } catch (err) {
       console.error('Error deleting family member:', err);
       throw err;
+    } finally {
+      setIsDeleting(false); // Always clear the flag
     }
-  }, [currentUser]);
-
-  useEffect(() => {
-    fetchFamilyMembers();
-  }, [fetchFamilyMembers]);
-
+  }, [currentUser, isDeleting, fetchFamilyMembers]);useEffect(() => {
+    // Only fetch if we have a current user
+    if (currentUser) {
+      fetchFamilyMembers();
+    } else {
+      // Clear data if no user
+      setFamilyMembers([]);
+      setLoading(false);
+    }
+  }, [currentUser, fetchFamilyMembers]); // Keep dependencies but be more careful about when fetchFamilyMembers changes
   return {
     familyMembers,
     loading,
     error,
+    isDeleting,
     fetchFamilyMembers,
     addFamilyMember,
     deleteFamilyMember,

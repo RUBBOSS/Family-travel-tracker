@@ -91,3 +91,15 @@ svg path:hover {
 svg path {
   transition: fill 0.2s, filter 0.2s;
 }
+
+/* Remove default focus outlines that might create white borders */
+.cursor-pointer:focus {
+  outline: none !important;
+}
+
+/* Ensure no default button or clickable element styling */
+button:focus,
+div[role="button"]:focus,
+[tabindex]:focus {
+  outline: none !important;
+}

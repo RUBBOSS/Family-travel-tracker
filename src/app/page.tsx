@@ -15,13 +15,13 @@ import { SchemaSetupGuide } from '@/components/SchemaSetupGuide';
 import { useUserContext } from '@/context/UserContext';
 import { useVisitedCountries } from '@/hooks/useVisitedCountries';
 import { useFamilyMembers } from '@/hooks/useFamilyMembers';
+import { useStats } from '@/hooks/useStats';
 import { supabase } from '@/utils/supabaseClient';
 
-export default function Home() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { currentUser, isLoading } = useUserContext();
-  const { visitedCountries, addCountry, removeCountry } = useVisitedCountries();
-  const { addFamilyMember } = useFamilyMembers();
+  const { visitedCountries, addCountry, removeCountry } = useVisitedCountries();  const { familyMembers, addFamilyMember, deleteFamilyMember, loading: familyMembersLoading, isDeleting, fetchFamilyMembers } = useFamilyMembers();
+  const { stats, isLoading: statsLoading, error: statsError, refreshStats } = useStats();
 
   const handleCountrySelect = async (countryId: number) => {
     try {
@@ -39,11 +39,21 @@ export default function Home() {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };  const handleMemberAdded = () => {
+    // Refresh the family members data to show the new member immediately
+    fetchFamilyMembers();
+    // Also refresh stats to update the family member count
+    refreshStats();
   };
 
-  const handleMemberAdded = () => {
-    // The FamilyMemberTabs component will automatically update via the useFamilyMembers hook
-    // We could trigger a refresh here if needed
+  const handleMemberDeleted = async (id: number) => {
+    try {
+      await deleteFamilyMember(id);
+      // Refresh stats after successful deletion
+      refreshStats();
+    } catch (error) {
+      console.error('Failed to delete family member:', error);
+    }
   };
 
   if (isLoading) return null;
@@ -105,9 +115,8 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Schema Setup Guide - only shows when DB setup issues are detected */}
         <SchemaSetupGuide />
-        
-        {/* Stats Overview */}
-        <StatsOverview />
+          {/* Stats Overview */}
+        <StatsOverview stats={stats} isLoading={statsLoading} error={statsError} />
         
         {/* Family Member Selection */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
@@ -119,9 +128,11 @@ export default function Home() {
             >
               <Plus size={16} />
               <span>Add Member</span>
-            </button>
-          </div>
-          <FamilyMemberTabs />
+            </button>          </div>          <FamilyMemberTabs 
+            familyMembers={familyMembers} 
+            loading={familyMembersLoading || isDeleting}
+            onDeleteMember={handleMemberDeleted}
+          />
         </section>
           {/* Country Search */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">

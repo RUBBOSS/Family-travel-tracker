@@ -1,11 +1,55 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useStats } from '@/hooks/useStats';
 import { motion } from 'framer-motion';
 
-export default function StatsOverview() {
-  const { stats, isLoading, error } = useStats();
+// Define the types locally to avoid circular dependencies
+type UserStats = {
+  id: number;
+  name: string;
+  color: string;
+  countriesVisited: number;
+};
+
+type CountryStats = {
+  id: number;
+  countryName: string;
+  countryCode: string;
+  visitors: number;
+};
+
+type TopTraveler = {
+  userId?: number;
+  name: string;
+  color?: string;
+  visits: number;
+};
+
+type MostVisitedCountry = {
+  countryId?: number;
+  countryName: string;
+  countryCode?: string;
+  visitors: number;
+};
+
+type Stats = {
+  general: {
+    totalCountries: number;
+    totalUsers: number;
+    totalVisits: number;
+    topTraveler: TopTraveler;
+    mostVisitedCountry: MostVisitedCountry;
+  };
+  users: UserStats[];
+  topCountries: CountryStats[];
+};
+
+interface StatsOverviewProps {
+  stats: Stats | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export default function StatsOverview({ stats, isLoading, error }: StatsOverviewProps) {
   
   if (isLoading) {
     return <StatsCardSkeleton />;

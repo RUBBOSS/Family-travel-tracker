@@ -56,11 +56,10 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Fetching stats for user:', user.id);
-    
-    // Query Supabase for real data
+      // Query Supabase for real data
     const [
       countryCountResult,
-      userCountResult,
+      familyMemberCountResult,
       visitCountResult,
       topTravelerResult,
       mostVisitedCountryResult,
@@ -68,21 +67,25 @@ export async function GET(request: NextRequest) {
       topCountriesResult
     ] = await Promise.all([
       // Total countries in the system
-      supabaseServer.from('countries').select('id', { count: 'exact', head: true }),
-        // Total users in the system
-      supabaseServer.from('user_profiles').select('id', { count: 'exact', head: true }),
+      supabaseServer.from('countries').select('id', { count: 'exact', head: true }),      // Total family members for current user
+      supabaseServer.from('family_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id),
       
-      // Total visits in the system
-      supabaseServer.from('visited_countries').select('id', { count: 'exact', head: true }),
+      // Total visits for current user's family members
+      supabaseServer.from('visited_countries')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id),
       
-      // Top traveler
-      supabaseServer.from('user_profiles')
+      // Top traveler among current user's family members
+      supabaseServer.from('family_members')
         .select(`
           id,
-          username,
+          name,
           avatar_color,
           visited_count:visited_countries(count)
         `)
+        .eq('user_id', user.id)
         .order('visited_count', { ascending: false })
         .limit(1)
         .single(),
@@ -97,15 +100,15 @@ export async function GET(request: NextRequest) {
         `)
         .order('visitor_count', { ascending: false })
         .limit(1)
-        .single(),
-        // User stats
-      supabaseServer.from('user_profiles')
+        .single(),        // Family member stats
+      supabaseServer.from('family_members')
         .select(`
           id,
-          username,
+          name,
           avatar_color,
           visited_count:visited_countries(count)
         `)
+        .eq('user_id', user.id)
         .order('visited_count', { ascending: false }),
         
       // Top countries
@@ -119,16 +122,14 @@ export async function GET(request: NextRequest) {
         .order('visitor_count', { ascending: false })
         .limit(10)
     ]);
-    
-    // Process results
+      // Process results
     const totalCountries = countryCountResult.count || 0;
-    const totalUsers = userCountResult.count || 0;
-    const totalVisits = visitCountResult.count || 0;
-      // Format the top traveler
+    const totalFamilyMembers = familyMemberCountResult.count || 0;
+    const totalVisits = visitCountResult.count || 0;    // Format the top traveler
     const topTraveler = topTravelerResult.data 
       ? {
           userId: topTravelerResult.data.id,
-          name: topTravelerResult.data.username,
+          name: topTravelerResult.data.name,
           color: topTravelerResult.data.avatar_color,
           visits: topTravelerResult.data.visited_count
         }
@@ -148,14 +149,13 @@ export async function GET(request: NextRequest) {
       : {
           countryName: 'No countries visited yet',
           visitors: 0
-        };
-      // Format user stats
+        };    // Format user stats
     const users = userStatsResult.data
-      ? userStatsResult.data.map(user => ({
-          id: user.id,
-          name: user.username,
-          color: user.avatar_color,
-          countriesVisited: user.visited_count
+      ? userStatsResult.data.map(member => ({
+          id: member.id,
+          name: member.name,
+          color: member.avatar_color,
+          countriesVisited: member.visited_count
         }))
       : [];
     
@@ -169,12 +169,11 @@ export async function GET(request: NextRequest) {
         }))
         .filter(country => country.visitors > 0)
       : [];
-    
-    // Return formatted stats
+      // Return formatted stats
     return NextResponse.json({
       general: {
         totalCountries,
-        totalUsers,
+        totalUsers: totalFamilyMembers,
         totalVisits,
         topTraveler,
         mostVisitedCountry,

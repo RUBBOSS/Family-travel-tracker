@@ -2,12 +2,17 @@
 
 import { useState } from 'react';
 import { useUserContext } from '@/context/UserContext';
-import { useFamilyMembers, FamilyMemberWithMeta } from '@/hooks/useFamilyMembers';
+import { FamilyMemberWithMeta } from '@/hooks/useFamilyMembers';
 import { X, User } from 'lucide-react';
 
-export default function FamilyMemberTabs() {
+interface FamilyMemberTabsProps {
+  familyMembers: FamilyMemberWithMeta[];
+  loading: boolean;
+  onDeleteMember: (id: number) => Promise<void>;
+}
+
+export default function FamilyMemberTabs({ familyMembers, loading, onDeleteMember }: FamilyMemberTabsProps) {
   const { currentUser } = useUserContext();
-  const { familyMembers, loading, deleteFamilyMember } = useFamilyMembers();
   const [selectedMember, setSelectedMember] = useState<FamilyMemberWithMeta | null>(null);
 
   if (!currentUser) {
@@ -25,19 +30,23 @@ export default function FamilyMemberTabs() {
         <p className="text-slate-300">Loading family members...</p>
       </div>
     );
-  }
-
-  const handleDeleteMember = async (memberId: number, e: React.MouseEvent) => {
+  }  const handleDeleteMember = async (memberId: number, e: React.MouseEvent) => {
     e.stopPropagation();
     
     if (confirm('Are you sure you want to remove this family member? This will also remove all their visited countries.')) {
       try {
-        await deleteFamilyMember(memberId);
+        console.log('Component: Starting delete for member ID:', memberId);
+        await onDeleteMember(memberId);
+        
+        console.log('Component: Delete successful, updating selected member');
         if (selectedMember?.id === memberId) {
           setSelectedMember(null);
         }
+        
+        console.log('Component: Delete operation completed');
       } catch (error) {
-        alert('Failed to delete family member. Please try again.');
+        console.error('Component: Delete failed:', error);
+        alert(`Failed to delete family member: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
       }
     }
   };
@@ -45,15 +54,12 @@ export default function FamilyMemberTabs() {
   return (
     <div className="space-y-4">
       {/* Account Owner */}
-      <div className="flex flex-wrap gap-3">
-        <div 
-          className={`relative group cursor-pointer ${
-            selectedMember === null ? 'ring-2 ring-white' : ''
-          }`}
+      <div className="flex flex-wrap gap-3">        <div 
+          className="relative group cursor-pointer focus:outline-none"
           onClick={() => setSelectedMember(null)}
         >
           <div
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 shadow-xl hover:scale-105`}
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 shadow-xl hover:scale-105 focus:outline-none`}
             style={{ backgroundColor: currentUser.avatar_color, color: 'white' }}
           >
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-bold">
@@ -61,19 +67,15 @@ export default function FamilyMemberTabs() {
             </div>
             <span className="font-medium">{currentUser.username} (You)</span>
           </div>
-        </div>
-
-        {/* Family Members */}
+        </div>        {/* Family Members */}
         {familyMembers.map((member) => (
           <div 
             key={member.id}
-            className={`relative group cursor-pointer ${
-              selectedMember?.id === member.id ? 'ring-2 ring-white' : ''
-            }`}
+            className="relative group cursor-pointer focus:outline-none"
             onClick={() => setSelectedMember(member)}
           >
             <div
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 shadow-xl hover:scale-105`}
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 shadow-xl hover:scale-105 focus:outline-none`}
               style={{ backgroundColor: member.avatarColor || '#8b5cf6', color: 'white' }}
             >
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-bold">
@@ -107,8 +109,7 @@ export default function FamilyMemberTabs() {
       {selectedMember && (
         <div className="mt-4 p-4 bg-slate-700/50 rounded-lg border border-slate-600">
           <h3 className="text-white font-medium mb-2">Currently viewing travels for:</h3>
-          <div className="flex items-center space-x-3">
-            <div 
+          <div className="flex items-center space-x-3">            <div 
               className="w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold"
               style={{ backgroundColor: selectedMember.avatarColor || '#8b5cf6' }}
             >
