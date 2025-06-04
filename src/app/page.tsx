@@ -135,7 +135,7 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
           />
         </section>
           {/* Country Search */}
-        <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
+        <section className="relative z-10 bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
           <h2 className="text-xl font-semibold mb-4 text-white">Add a Country</h2>
           <CountrySearch onCountrySelect={handleCountrySelect} />
         </section>
