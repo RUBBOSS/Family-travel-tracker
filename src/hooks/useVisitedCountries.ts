@@ -21,6 +21,7 @@ export function useVisitedCountries() {
   const fetchVisitedCountries = useCallback(async () => {
     // Don't fetch if user is not authenticated
     if (!currentUser) {
+      console.log('fetchVisitedCountries: No current user, setting visitedCountries to empty array.');
       setVisitedCountries([]);
       setIsLoading(false);
       return;
@@ -36,7 +37,8 @@ export function useVisitedCountries() {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !sessionData.session?.access_token) {
-        console.error('No valid session available:', sessionError);
+        console.error('fetchVisitedCountries: No valid session available:', sessionError);
+        console.log('fetchVisitedCountries: Setting visitedCountries to empty array due to session error.');
         setVisitedCountries([]);
         setIsLoading(false);
         return;
@@ -63,36 +65,41 @@ export function useVisitedCountries() {
       }
       
       const data = await response.json();
-      console.log('Visited countries data:', data);
+      console.log('fetchVisitedCountries: Raw visited countries data from API:', data);
       
-      // Transform the Supabase data format to our VisitedCountry format
+      // Transform the API data format to our VisitedCountry format
       const formattedData = data.map((item: any) => ({
         id: item.id,
-        countryName: item.countries?.country_name,
-        countryCode: item.countries?.country_code,
-        flagUrl: item.countries?.flag_url,
-        visitDate: item.visit_date,
+        countryName: item.countryName,
+        countryCode: item.countryCode,
+        flagUrl: item.flagUrl,
+        visitDate: item.visitDate,
         notes: item.notes
       }));
       
+      console.log('fetchVisitedCountries: Formatted data before setting state:', formattedData);
       setVisitedCountries(formattedData);
+      console.log('fetchVisitedCountries: visitedCountries state updated.');
+
     } catch (err: any) {
-      console.error('Error fetching countries:', err);
+      console.error('fetchVisitedCountries: Error fetching countries:', err);
       setError(err.message || 'Failed to fetch visited countries');
       
-      // Don't show mock data - just show empty list when there's an error
+      console.log('fetchVisitedCountries: Setting visitedCountries to empty array due to error.');
       setVisitedCountries([]);
     } finally {
       setIsLoading(false);
+      console.log('fetchVisitedCountries: Loading finished.');
     }
   }, [currentUser]);
 
   const addCountry = useCallback(async (countryId: number, notes: string = '') => {
     if (!currentUser) return;
-    
+
     try {
       setIsLoading(true);
-      
+      console.log('Attempting to add country:', countryId, 'for user:', currentUser?.id);
+
       // Get the current user's session for the auth token
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
@@ -114,14 +121,18 @@ export function useVisitedCountries() {
           visitDate: new Date().toISOString()
         })
       });
-      
+
+      console.log('API POST /api/visited response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Error: ${response.status}`);
       }
       
       toast.success('Country added successfully!');
+      console.log('Country added successfully via API. Fetching updated visited countries...');
       await fetchVisitedCountries();
+      console.log('Finished fetching updated visited countries.');
     } catch (err: any) {
       console.error('Error adding country:', err);
       toast.error(err.message || 'Failed to add country');
@@ -178,6 +189,13 @@ export function useVisitedCountries() {
   const visitedCountryCodes = useMemo(() => {
     return visitedCountries.map((country) => country.countryCode);
   }, [visitedCountries]);
+
+  console.log('useVisitedCountries: Returning state:', {
+    visitedCountries,
+    visitedCountryCodes,
+    isLoading,
+    error,
+  });
 
   return {
     visitedCountries,

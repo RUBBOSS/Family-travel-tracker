@@ -9,6 +9,7 @@ interface VisitedCountry {
   countryName: string;
   visitDate: string;
   notes?: string;
+  flagUrl?: string;
 }
 
 interface CountryTableProps {
@@ -50,7 +51,10 @@ export default function CountryTable({ countries = [], onRemoveCountry }: Countr
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    console.log('Formatting dateString:', dateString);
+    const date = new Date(dateString);
+    console.log('New Date object:', date);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -103,6 +107,9 @@ export default function CountryTable({ countries = [], onRemoveCountry }: Countr
                 <tr key={country.id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
+                      {country.flagUrl && (
+                        <img src={country.flagUrl} alt={`${country.countryName} flag`} className="w-6 h-4 object-cover rounded-sm" />
+                      )}
                       <div className="w-6 h-4 bg-slate-600 rounded-sm flex items-center justify-center text-xs text-white">
                         {country.countryCode}
                       </div>
@@ -117,7 +124,8 @@ export default function CountryTable({ countries = [], onRemoveCountry }: Countr
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-slate-400">{country.notes || '-'}</span>
-                  </td>                  <td className="py-3 px-4 text-right">
+                  </td>
+                  <td className="py-3 px-4 text-right">
                     <button
                       onClick={() => onRemoveCountry?.(country.id)}
                       className="text-red-400 hover:text-red-300 transition-colors p-1 rounded hover:bg-red-400/10"
@@ -127,7 +135,8 @@ export default function CountryTable({ countries = [], onRemoveCountry }: Countr
                     </button>
                   </td>
                 </tr>
-              ))}            </tbody>
+              ))}
+            </tbody>
           </table>
         </div>
       )}

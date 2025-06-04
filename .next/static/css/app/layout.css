@@ -795,14 +795,11 @@ select {
 .z-50 {
   z-index: 50;
 }
-.z-\[9998\] {
-  z-index: 9998;
+.z-\[40\] {
+  z-index: 40;
 }
 .z-\[9999\] {
   z-index: 9999;
-}
-.z-\[40\] {
-  z-index: 40;
 }
 .mx-auto {
   margin-left: auto;
@@ -978,9 +975,6 @@ select {
 }
 .cursor-pointer {
   cursor: pointer;
-}
-.resize {
-  resize: both;
 }
 .list-decimal {
   list-style-type: decimal;
@@ -1237,6 +1231,10 @@ select {
 }
 .to-slate-900 {
   --tw-gradient-to: #0f172a var(--tw-gradient-to-position);
+}
+.object-cover {
+  -o-object-fit: cover;
+     object-fit: cover;
 }
 .p-1 {
   padding: 0.25rem;

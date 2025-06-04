@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { MapPin, User, Plus, LogOut } from 'lucide-react';
@@ -22,6 +22,20 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
   const { currentUser, isLoading } = useUserContext();
   const { visitedCountries, addCountry, removeCountry } = useVisitedCountries();  const { familyMembers, addFamilyMember, deleteFamilyMember, loading: familyMembersLoading, isDeleting, fetchFamilyMembers } = useFamilyMembers();
   const { stats, isLoading: statsLoading, error: statsError, refreshStats } = useStats();
+
+  useEffect(() => {
+    console.log('page.tsx: visitedCountries state changed:', visitedCountries);
+    if (visitedCountries.length > 0) {
+      console.log('page.tsx: First visited country details:', {
+        id: visitedCountries[0].id,
+        countryName: visitedCountries[0].countryName,
+        countryCode: visitedCountries[0].countryCode,
+        flagUrl: visitedCountries[0].flagUrl,
+        visitDate: visitedCountries[0].visitDate,
+        notes: visitedCountries[0].notes,
+      });
+    }
+  }, [visitedCountries]);
 
   const handleCountrySelect = async (countryId: number) => {
     try {
@@ -55,6 +69,17 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
       console.error('Failed to delete family member:', error);
     }
   };
+
+  const tableCountries = useMemo(() => {
+    console.log('page.tsx: Memoizing tableCountries from visitedCountries:', visitedCountries);
+    return visitedCountries.map(country => ({
+      id: country.id.toString(),
+      countryCode: country.countryCode,
+      countryName: country.countryName,
+      visitDate: country.visitDate,
+      notes: country.notes || ''
+    }));
+  }, [visitedCountries]);
 
   if (isLoading) return null;
   if (!currentUser) {
@@ -148,14 +173,8 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
           {/* Country Table */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
           <h2 className="text-xl font-semibold mb-4 text-white">Visited Countries</h2>
-          <CountryTable 
-            countries={visitedCountries.map(country => ({
-              id: country.id.toString(),
-              countryCode: country.countryCode,
-              countryName: country.countryName,
-              visitDate: country.visitDate,
-              notes: country.notes || ''
-            }))}
+          <CountryTable
+            countries={tableCountries}
             onRemoveCountry={(countryId) => removeCountry(parseInt(countryId))}
           />
         </section>
