@@ -1,7 +1,9 @@
 {
-  "/api/countries/route": "app/api/countries/route.js",
   "/api/family-members/route": "app/api/family-members/route.js",
+  "/api/countries/route": "app/api/countries/route.js",
   "/api/stats/route": "app/api/stats/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/api/visited/route": "app/api/visited/route.js",
+  "/api/visited/[id]/route": "app/api/visited/[id]/route.js",
   "/page": "app/page.js"
 }

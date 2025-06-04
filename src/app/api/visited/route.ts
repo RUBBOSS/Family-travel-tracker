@@ -53,12 +53,8 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    console.log('Fetching visited countries for user ID:', user.id);
-    
-    // Try to query with all columns, fall back if needed
     let data, error;
     
-    // First attempt: try with visit_date and notes
     const fullQuery = await supabaseServer
       .from('visited_countries')
       .select('id, country_id, user_id, visit_date, notes, countries (country_name, country_code, flag_url)')
@@ -221,12 +217,9 @@ export async function DELETE(request: NextRequest) {
     // Extract ID from the URL query parameter
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
-    
-    if (!id || id === 'visited') {
+      if (!id || id === 'visited') {
       return NextResponse.json({ error: 'Visit ID is required' }, { status: 400 });
     }
-    
-    console.log('Deleting visited country with ID:', id, 'for user:', user.id);
     
     // First check if this record belongs to the user
     const { data: existing, error: existErr } = await supabaseServer

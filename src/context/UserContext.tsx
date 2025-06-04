@@ -204,16 +204,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id || 'no user');
-        
         if (event === 'SIGNED_OUT' || !session?.user) {
-          console.log('User signed out, clearing current user');
           isAuthenticatedRef.current = false;
           setCurrentUser(null);
           setError(null);
           setIsLoading(false);
         } else if (session?.user) {
-          console.log('User signed in, fetching profile');
           isAuthenticatedRef.current = true;
           try {
             const userProfile = await fetchUserProfile(session.user);

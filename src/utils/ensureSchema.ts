@@ -3,17 +3,12 @@
 import { supabase } from './supabaseClient';
 
 export async function ensureUserProfilesTable() {
-  console.log('Checking if user_profiles table exists...');
-  
   try {
     // First check if the function exists, if not, the user needs to run the setup SQL
     const { data: functions, error: fnError } = await supabase
       .rpc('create_user_profiles_table');
-    
-    if (fnError) {
-      console.warn('Schema function not found - you need to run the setup SQL script');
-      console.warn('Function error:', fnError);
-      console.log('Checking if user_profiles table exists anyway...');
+      if (fnError) {
+      // Schema function not found - try to query the table directly
       
       // Try to query the user_profiles table directly
       const { data, error } = await supabase
@@ -47,11 +42,9 @@ export async function ensureUserProfilesTable() {
       .limit(1);
     
     if (error) {
-      console.error('Error querying user_profiles:', error);
-      return { success: false, error };
+      console.error('Error querying user_profiles:', error);    return { success: false, error };
     }
     
-    console.log('user_profiles table exists and is accessible');
     return { success: true };
   } catch (err) {
     console.error('Unexpected error checking/creating user_profiles table:', err);

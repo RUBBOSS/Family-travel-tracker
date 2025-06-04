@@ -48,14 +48,12 @@ export async function checkExistingTables() {
             count: count || 0,
             error: null
           };
-          console.log(`✅ Table "${tableName}" exists with ${count || 0} records`);
         } else {
           results.tables[tableName] = {
             exists: false,
             count: 0,
             error: error.message
           };
-          console.log(`❌ Table "${tableName}" does not exist or is inaccessible:`, error.message);
         }
       } catch (err) {
         results.tables[tableName] = {
@@ -70,10 +68,10 @@ export async function checkExistingTables() {
     try {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authData.user) {
-        console.log('🔑 Current auth user detected');
+        // User authenticated
       }
     } catch (err) {
-      console.log('No current auth user');
+      // No current auth user
     }
     
     // Generate recommendations

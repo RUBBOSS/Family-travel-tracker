@@ -109,8 +109,6 @@ export const visitedCountriesRelations = relations(visitedCountries, ({ one }) =
  * @returns An object with information about existing tables
  */
 export async function checkExistingTables() {
-  console.log('Checking existing database structure...');
-  
   const results: any = {
     tables: {},
     existingUsers: 0,
@@ -126,21 +124,18 @@ export async function checkExistingTables() {
         const { data, error, count } = await supabase
           .from(tableName)
           .select('*', { count: 'exact', head: true });
-        
-        if (!error) {
+          if (!error) {
           results.tables[tableName] = {
             exists: true,
             count: count || 0,
             error: null
           };
-          console.log(`✅ Table "${tableName}" exists with ${count || 0} records`);
         } else {
           results.tables[tableName] = {
             exists: false,
             count: 0,
             error: error.message
           };
-          console.log(`❌ Table "${tableName}" does not exist or is inaccessible:`, error.message);
           
           if (tableName === 'user_profiles') {
             results.recommendations.push(
@@ -154,14 +149,12 @@ export async function checkExistingTables() {
           count: 0,
           error: err instanceof Error ? err.message : String(err)
         };
-      }
-    }
+      }    }
     
     // Check for existing auth users
     try {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authData?.user) {
-        console.log('🔑 Current auth user detected');
         results.existingUsers = 1;
       }
     } catch (err) {
@@ -185,8 +178,6 @@ export async function checkExistingTables() {
  * @returns Object indicating success or failure
  */
 export async function ensureUserProfilesTable() {
-  console.log('Checking if user_profiles table exists...');
-  
   try {
     // First check if the function exists, if not, try to execute the create function
     const { data: functions, error: fnError } = await supabase
@@ -205,9 +196,8 @@ export async function ensureUserProfilesTable() {
         console.error('Error checking user_profiles table:', error);
         console.error('Please run the SQL setup script in the Supabase SQL Editor');
         return { success: false, error };
-      }
-    } else {
-      console.log('Schema function executed successfully');
+      }    } else {
+      // Schema function executed successfully
     }
     
     // One more check to confirm the table exists
@@ -215,13 +205,11 @@ export async function ensureUserProfilesTable() {
       .from('user_profiles')
       .select('*')
       .limit(1);
-    
-    if (error) {
+      if (error) {
       console.error('Error querying user_profiles:', error);
       return { success: false, error };
     }
     
-    console.log('user_profiles table exists and is accessible');
     return { success: true };
   } catch (err) {
     console.error('Unexpected error checking/creating user_profiles table:', err);

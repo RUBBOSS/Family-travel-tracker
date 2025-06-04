@@ -18,28 +18,12 @@ import { useFamilyMembers } from '@/hooks/useFamilyMembers';
 import { useStats } from '@/hooks/useStats';
 import { supabase } from '@/utils/supabaseClient';
 
-export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { currentUser, isLoading } = useUserContext();
+export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useState(false);  const { currentUser, isLoading } = useUserContext();
   const { visitedCountries, addCountry, removeCountry } = useVisitedCountries();  const { familyMembers, addFamilyMember, deleteFamilyMember, loading: familyMembersLoading, isDeleting, fetchFamilyMembers } = useFamilyMembers();
   const { stats, isLoading: statsLoading, error: statsError, refreshStats } = useStats();
-
-  useEffect(() => {
-    console.log('page.tsx: visitedCountries state changed:', visitedCountries);
-    if (visitedCountries.length > 0) {
-      console.log('page.tsx: First visited country details:', {
-        id: visitedCountries[0].id,
-        countryName: visitedCountries[0].countryName,
-        countryCode: visitedCountries[0].countryCode,
-        flagUrl: visitedCountries[0].flagUrl,
-        visitDate: visitedCountries[0].visitDate,
-        notes: visitedCountries[0].notes,
-      });
-    }
-  }, [visitedCountries]);
-
-  const handleCountrySelect = async (countryId: number) => {
+  const handleCountrySelect = async (countryId: number, notes?: string) => {
     try {
-      await addCountry(countryId);
+      await addCountry(countryId, notes || '');
     } catch (error) {
       console.error('Failed to add country:', error);
     }
@@ -69,9 +53,7 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
       console.error('Failed to delete family member:', error);
     }
   };
-
   const tableCountries = useMemo(() => {
-    console.log('page.tsx: Memoizing tableCountries from visitedCountries:', visitedCountries);
     return visitedCountries.map(country => ({
       id: country.id.toString(),
       countryCode: country.countryCode,
@@ -159,10 +141,9 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
             onDeleteMember={handleMemberDeleted}
           />
         </section>
-          {/* Country Search */}
-        <section className="relative z-10 bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
+          {/* Country Search */}        <section className="relative z-10 bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
           <h2 className="text-xl font-semibold mb-4 text-white">Add a Country</h2>
-          <CountrySearch onCountrySelect={handleCountrySelect} />
+          <CountrySearch onCountryAdd={handleCountrySelect} />
         </section>
         
         {/* Interactive World Map */}

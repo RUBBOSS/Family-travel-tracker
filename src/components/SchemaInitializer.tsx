@@ -16,10 +16,8 @@ export function SchemaInitializer() {
       try {
         // First check all tables
         const checkResult = await checkExistingTables();
-        
-        // Then ensure the minimal schema is in place
+          // Then ensure the minimal schema is in place
         const result = await ensureMinimalSchema();
-        console.log('Schema initialization result:', result);
         
         setSchemaStatus({
           checked: true,

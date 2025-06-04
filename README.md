@@ -11,10 +11,12 @@ Family Travel Tracker is a web application that allows families to keep track of
 
 ## Technology Stack
 
-- **Frontend:** HTML, CSS, EJS (Embedded JavaScript)
-- **Backend:** Node.js, Express.js
+- **Frontend:** Next.js, React, TypeScript, Tailwind CSS
+- **Backend:** Next.js API Routes
 - **Database:** Supabase (PostgreSQL)
-- **Dependencies:** `body-parser`, `ejs`, `express`, `pg`, `dotenv`
+- **State Management:** React Context API
+- **Data Visualization:** D3.js, SVG
+- **UI Components:** Custom components with Tailwind CSS
 
 ## Local Installation
 
@@ -52,46 +54,38 @@ Family Travel Tracker is a web application that allows families to keep track of
    - Create a Supabase project
    - Run the SQL in `supabase-setup.sql` in the Supabase SQL Editor
 
-5. Start the application:
+5. Start the development server:
 
    ```bash
-   npm start
+   npm run dev
    ```
 
 6. Open your browser and navigate to `http://localhost:3000`.
 
 ## Deployment
 
-### Deploy to Railway (Recommended)
+### Deploy to Vercel (Recommended for Next.js)
 
-1. Create a Railway account at [railway.app](https://railway.app)
-2. Install Railway CLI:
+1. Create a Vercel account at [vercel.com](https://vercel.com)
+2. Install Vercel CLI:
    ```bash
-   npm i -g @railway/cli
+   npm i -g vercel
    ```
-3. Login to Railway:
+3. Deploy:
    ```bash
-   railway login
+   vercel
    ```
-4. Initialize Railway:
-   ```bash
-   railway init
-   ```
-5. Deploy:
-   ```bash
-   railway up
-   ```
+4. Add environment variables in the Vercel dashboard
 
-### Deploy to Render
+### Deploy to Netlify
 
-1. Create a Render account at [render.com](https://render.com)
-2. Create a new Web Service
-3. Connect your GitHub repository
-4. Set the following:
-   - Build Command: `npm install`
-   - Start Command: `npm start`
-5. Add environment variables from your `.env` file
-6. Deploy
+1. Create a Netlify account at [netlify.com](https://netlify.com)
+2. Connect your GitHub repository
+3. Set the following:
+   - Build Command: `npm run build`
+   - Publish Directory: `.next`
+4. Add environment variables from your `.env` file
+5. Deploy
 
 ## Usage
 

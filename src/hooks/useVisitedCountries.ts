@@ -1,6 +1,6 @@
 import { supabase } from '@/utils/supabaseClient';
 import { useUserContext } from '@/context/UserContext';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 
 type VisitedCountry = {
@@ -17,28 +17,33 @@ export function useVisitedCountries() {
   const [visitedCountries, setVisitedCountries] = useState<VisitedCountry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastFetchedUserId = useRef<string | null>(null);
+  const isFetchingRef = useRef(false);
 
   const fetchVisitedCountries = useCallback(async () => {
     // Don't fetch if user is not authenticated
-    if (!currentUser) {
-      console.log('fetchVisitedCountries: No current user, setting visitedCountries to empty array.');
+    if (!currentUser?.id) {
       setVisitedCountries([]);
       setIsLoading(false);
+      lastFetchedUserId.current = null;
+      return;
+    }
+
+    // Prevent duplicate requests for the same user
+    if (isFetchingRef.current || lastFetchedUserId.current === currentUser.id) {
       return;
     }
 
     try {
+      isFetchingRef.current = true;
       setIsLoading(true);
       setError(null);
-      
-      console.log('Fetching visited countries for user:', currentUser?.id);
       
       // Get the current user's session for the auth token
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !sessionData.session?.access_token) {
         console.error('fetchVisitedCountries: No valid session available:', sessionError);
-        console.log('fetchVisitedCountries: Setting visitedCountries to empty array due to session error.');
         setVisitedCountries([]);
         setIsLoading(false);
         return;
@@ -55,17 +60,14 @@ export function useVisitedCountries() {
       
       if (!response.ok) {
         if (response.status === 401) {
-          console.log('Unauthorized - user may need to re-authenticate');
           setVisitedCountries([]);
           setIsLoading(false);
           return;
         }
-        console.error('API error:', response.status);
         throw new Error(`API error: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      console.log('fetchVisitedCountries: Raw visited countries data from API:', data);
       
       // Transform the API data format to our VisitedCountry format
       const formattedData = data.map((item: any) => ({
@@ -76,29 +78,25 @@ export function useVisitedCountries() {
         visitDate: item.visitDate,
         notes: item.notes
       }));
-      
-      console.log('fetchVisitedCountries: Formatted data before setting state:', formattedData);
+
       setVisitedCountries(formattedData);
-      console.log('fetchVisitedCountries: visitedCountries state updated.');
+      lastFetchedUserId.current = currentUser.id;
 
     } catch (err: any) {
-      console.error('fetchVisitedCountries: Error fetching countries:', err);
+      console.error('Error fetching visited countries:', err);
       setError(err.message || 'Failed to fetch visited countries');
-      
-      console.log('fetchVisitedCountries: Setting visitedCountries to empty array due to error.');
       setVisitedCountries([]);
     } finally {
       setIsLoading(false);
-      console.log('fetchVisitedCountries: Loading finished.');
+      isFetchingRef.current = false;
     }
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
   const addCountry = useCallback(async (countryId: number, notes: string = '') => {
     if (!currentUser) return;
 
     try {
       setIsLoading(true);
-      console.log('Attempting to add country:', countryId, 'for user:', currentUser?.id);
 
       // Get the current user's session for the auth token
       const { data: sessionData } = await supabase.auth.getSession();
@@ -122,17 +120,15 @@ export function useVisitedCountries() {
         })
       });
 
-      console.log('API POST /api/visited response status:', response.status);
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Error: ${response.status}`);
       }
       
       toast.success('Country added successfully!');
-      console.log('Country added successfully via API. Fetching updated visited countries...');
+      // Force refresh by clearing the cache and re-fetching
+      lastFetchedUserId.current = null;
       await fetchVisitedCountries();
-      console.log('Finished fetching updated visited countries.');
     } catch (err: any) {
       console.error('Error adding country:', err);
       toast.error(err.message || 'Failed to add country');
@@ -169,6 +165,8 @@ export function useVisitedCountries() {
       }
       
       toast.success('Country removed successfully!');
+      // Force refresh by clearing the cache and re-fetching
+      lastFetchedUserId.current = null;
       await fetchVisitedCountries();
     } catch (err: any) {
       console.error('Error removing country:', err);
@@ -179,23 +177,17 @@ export function useVisitedCountries() {
   }, [currentUser, fetchVisitedCountries]);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser?.id) {
       fetchVisitedCountries();
     } else {
       setVisitedCountries([]);
+      lastFetchedUserId.current = null;
     }
-  }, [currentUser, fetchVisitedCountries]);
+  }, [currentUser?.id, fetchVisitedCountries]);
 
   const visitedCountryCodes = useMemo(() => {
     return visitedCountries.map((country) => country.countryCode);
   }, [visitedCountries]);
-
-  console.log('useVisitedCountries: Returning state:', {
-    visitedCountries,
-    visitedCountryCodes,
-    isLoading,
-    error,
-  });
 
   return {
     visitedCountries,
