@@ -12,14 +12,28 @@ interface AddFamilyMemberDialogProps {
 }
 
 const AVATAR_COLORS = [
-  '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
-  '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16',
-  '#06B6D4', '#F43F5E', '#8B5FBF', '#EAB308', '#22C55E'
+  '#FF3B30', // Bright Red
+  '#FF9500', // Bright Orange
+  '#FFCC00', // Bright Yellow
+  '#30D158', // Bright Green
+  '#00C7BE', // Bright Teal
+  '#007AFF', // Bright Blue
+  '#5856D6', // Bright Purple
+  '#FF2D92', // Bright Pink
+  '#FF6B35', // Bright Coral
+  '#34C759', // Bright Lime
+  '#64D2FF', // Bright Cyan
+  '#BF5AF2', // Bright Violet
+  '#FF3B7D', // Bright Magenta
+  '#32D74B', // Bright Mint
+  '#5AC8FA'  // Bright Sky Blue
 ];
 
 export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, addFamilyMember }: AddFamilyMemberDialogProps) {
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
+  const [customColor, setCustomColor] = useState('');
+  const [useCustomColor, setUseCustomColor] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,10 +47,11 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
     setLoading(true);
     setError(null);
 
-    try {
-      // Use the passed addFamilyMember function if available, otherwise fall back to direct API call
+    try {      // Use the passed addFamilyMember function if available, otherwise fall back to direct API call
+      const finalColor = useCustomColor ? customColor : selectedColor;
+      
       if (addFamilyMember) {
-        await addFamilyMember(name.trim(), selectedColor);
+        await addFamilyMember(name.trim(), finalColor);
       } else {
         const response = await fetch('/api/family-members', {
           method: 'POST',
@@ -45,7 +60,7 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
           },
           body: JSON.stringify({
             name: name.trim(),
-            avatarColor: selectedColor,
+            avatarColor: finalColor,
           }),
         });
 
@@ -53,11 +68,11 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to add family member');
         }
-      }
-
-      // Reset form
+      }      // Reset form
       setName('');
       setSelectedColor(AVATAR_COLORS[0]);
+      setCustomColor('');
+      setUseCustomColor(false);
       setError(null);
       
       // Notify parent component
@@ -131,29 +146,53 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
                     className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
-                </div>
-
-                {/* Color Selection */}
+                </div>                {/* Color Selection */}
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
                     <Palette className="w-4 h-4" />
                     Avatar Color
                   </label>
-                  <div className="grid grid-cols-5 gap-2">
+                  
+                  {/* Preset Colors */}
+                  <div className="grid grid-cols-5 gap-2 mb-3">
                     {AVATAR_COLORS.map((color) => (
                       <button
                         key={color}
                         type="button"
-                        onClick={() => setSelectedColor(color)}
+                        onClick={() => {
+                          setSelectedColor(color);
+                          setUseCustomColor(false);
+                        }}
                         className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          selectedColor === color
-                            ? 'border-white scale-110'
-                            : 'border-slate-600 hover:border-slate-400'
+                          selectedColor === color && !useCustomColor
+                            ? 'border-white scale-110 shadow-lg'
+                            : 'border-slate-600 hover:border-slate-400 hover:scale-105'
                         }`}
                         style={{ backgroundColor: color }}
                         title={color}
                       />
                     ))}
+                  </div>
+                  
+                  {/* Custom Color Picker */}
+                  <div className="flex items-center gap-2 p-2 bg-slate-700 rounded-lg border border-slate-600">
+                    <input
+                      type="color"
+                      value={customColor || '#FF3B30'}
+                      onChange={(e) => {
+                        setCustomColor(e.target.value);
+                        setUseCustomColor(true);
+                      }}
+                      className="w-8 h-8 rounded border-2 border-slate-500 cursor-pointer"
+                      title="Choose custom color"
+                    />
+                    <span className="text-sm text-slate-300">Custom Color</span>
+                    {useCustomColor && (
+                      <div 
+                        className="w-4 h-4 rounded-full border border-white ml-auto"
+                        style={{ backgroundColor: customColor }}
+                      />
+                    )}
                   </div>
                 </div>
 

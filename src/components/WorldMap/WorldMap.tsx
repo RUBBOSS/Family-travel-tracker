@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useUserContext } from '@/context/UserContext';
 import { useVisitedCountries } from '@/hooks/useVisitedCountries';
 import { useCountries } from '@/hooks/useCountries';
@@ -29,11 +29,36 @@ export default function WorldMap({ selectedFamilyMemberId, familyMembers = [] }:
   const { currentUser } = useUserContext();
   const { visitedCountries, visitedCountryCodes, fetchVisitedCountries, isLoading } = useVisitedCountries(selectedFamilyMemberId);
   const { totalCount: totalCountries } = useCountries();
-  const [isMapLoaded, setIsMapLoaded] = useState(false);    useEffect(() => {
-    if (currentUser) {
-      fetchVisitedCountries();
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const prevSelectedMemberRef = useRef<number | null>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Debounce family member changes to prevent rapid successive API calls
+    if (currentUser && prevSelectedMemberRef.current !== selectedFamilyMemberId) {
+      // Clear any existing timeout
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      
+      // Set a new timeout to delay the fetch
+      debounceTimeoutRef.current = setTimeout(() => {
+        prevSelectedMemberRef.current = selectedFamilyMemberId ?? null;
+        fetchVisitedCountries(true);
+      }, 100); // 100ms debounce
     }
-  }, [currentUser, fetchVisitedCountries, selectedFamilyMemberId]);
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [currentUser, selectedFamilyMemberId, fetchVisitedCountries]);
+
+  const handleMapLoad = useCallback(() => {
+    setIsMapLoaded(true);
+  }, []);
   const visitedPercentage = useMemo(() => {
     if (totalCountries === 0) return '0.0';
     return ((visitedCountries.length / totalCountries) * 100).toFixed(1);
@@ -109,7 +134,7 @@ export default function WorldMap({ selectedFamilyMemberId, familyMembers = [] }:
             }
             return currentUser?.avatar_color || '#3b82f6';
           })()}
-          onLoad={() => setIsMapLoaded(true)}
+          onLoad={handleMapLoad}
         />
         </div>
       </div>

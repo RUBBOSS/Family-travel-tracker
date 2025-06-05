@@ -19,8 +19,9 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
   const [error, setError] = useState<string | null>(null);
   const lastFetchedKey = useRef<string | null>(null);
   const isFetchingRef = useRef(false);
+  const currentRequestRef = useRef<number>(0); // Track request sequence
 
-  const fetchVisitedCountries = useCallback(async () => {
+  const fetchVisitedCountries = useCallback(async (forceRefresh = false) => {
     // Don't fetch if user is not authenticated
     if (!currentUser?.id) {
       setVisitedCountries([]);
@@ -33,7 +34,8 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
     const cacheKey = `${currentUser.id}-${selectedFamilyMemberId || 'none'}`;
     
     // Prevent duplicate requests for the same user and family member combination
-    if (isFetchingRef.current || lastFetchedKey.current === cacheKey) {
+    // But allow forced refresh when switching family members or after prolonged inactivity
+    if (isFetchingRef.current || (!forceRefresh && lastFetchedKey.current === cacheKey)) {
       return;
     }
 
@@ -42,6 +44,9 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
       setIsLoading(true);
       setError(null);
       
+      // Increment request counter and capture current request ID
+      const requestId = ++currentRequestRef.current;
+      
       // Get the current user's session for the auth token
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
@@ -49,6 +54,8 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
         console.error('fetchVisitedCountries: No valid session available:', sessionError);
         setVisitedCountries([]);
         setIsLoading(false);
+        // Clear cache on session errors to force fresh fetch on next attempt
+        lastFetchedKey.current = null;
         return;
       }
       
@@ -62,11 +69,15 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
-        }
+        },
+        // Add timeout to handle network issues after prolonged inactivity
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       });
       
       if (!response.ok) {
         if (response.status === 401) {
+          // Clear cache on auth errors to force fresh fetch
+          lastFetchedKey.current = null;
           setVisitedCountries([]);
           setIsLoading(false);
           return;
@@ -75,6 +86,12 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
       }
 
       const data = await response.json();
+      
+      // Check if this is still the latest request (handle race conditions)
+      if (requestId !== currentRequestRef.current) {
+        console.log('Discarding stale request response');
+        return;
+      }
       
       // Transform the API data format to our VisitedCountry format
       const formattedData = data.map((item: any) => ({
@@ -97,7 +114,7 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [currentUser?.id, selectedFamilyMemberId]);
+  }, [currentUser?.id, selectedFamilyMemberId]); // Stable dependencies
 
   const addCountry = useCallback(async (countryId: number, notes: string = '', familyMemberId: number | null = null) => {
     if (!currentUser) return;
@@ -136,14 +153,14 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
       toast.success('Country added successfully!');
       // Force refresh by clearing the cache and re-fetching
       lastFetchedKey.current = null;
-      await fetchVisitedCountries();
+      await fetchVisitedCountries(true);
     } catch (err: any) {
       console.error('Error adding country:', err);
       toast.error(err.message || 'Failed to add country');
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, fetchVisitedCountries]);
+  }, [currentUser, fetchVisitedCountries]); // Use stable fetchVisitedCountries
 
   const removeCountry = useCallback(async (id: number) => {
     if (!currentUser) return;
@@ -175,23 +192,33 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
       toast.success('Country removed successfully!');
       // Force refresh by clearing the cache and re-fetching
       lastFetchedKey.current = null;
-      await fetchVisitedCountries();
+      await fetchVisitedCountries(true);
     } catch (err: any) {
       console.error('Error removing country:', err);
       toast.error(err.message || 'Failed to remove country');
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, fetchVisitedCountries]);
+  }, [currentUser, fetchVisitedCountries]); // Use stable fetchVisitedCountries
 
   useEffect(() => {
     if (currentUser?.id) {
-      fetchVisitedCountries();
+      // Force refresh when family member selection changes to ensure fresh data
+      const refreshData = async () => {
+        // Clear cache first to ensure fresh data
+        lastFetchedKey.current = null;
+        // Cancel any in-flight requests
+        currentRequestRef.current++;
+        // Wait a brief moment to ensure any pending requests are cancelled
+        await new Promise(resolve => setTimeout(resolve, 50));
+        await fetchVisitedCountries(true);
+      };
+      refreshData();
     } else {
       setVisitedCountries([]);
       lastFetchedKey.current = null;
     }
-  }, [currentUser?.id, fetchVisitedCountries]);
+  }, [currentUser?.id, selectedFamilyMemberId, fetchVisitedCountries]);
 
   const visitedCountryCodes = useMemo(() => {
     return visitedCountries.map((country) => country.countryCode);
