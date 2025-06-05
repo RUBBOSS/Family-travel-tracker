@@ -53,40 +53,67 @@ export async function GET(request: NextRequest) {
   }
   
   try {
+    // Get family_member_id from query parameters
+    const { searchParams } = new URL(request.url);
+    const familyMemberId = searchParams.get('family_member_id');
+    
     let data, error;
     
-    const fullQuery = await supabaseServer
+    let fullQuery = supabaseServer
       .from('visited_countries')
-      .select('id, country_id, user_id, visit_date, notes, countries (country_name, country_code, flag_url)')
+      .select('id, country_id, user_id, family_member_id, visit_date, notes, countries (country_name, country_code, flag_url)')
       .eq('user_id', user.id);
-      
-    data = fullQuery.data;
-    error = fullQuery.error;
     
-    // If the query fails due to missing columns, try with basic columns
+    // Filter by family member if specified
+    if (familyMemberId) {
+      fullQuery = fullQuery.eq('family_member_id', parseInt(familyMemberId));
+    } else {
+      // If no family member specified, get user's personal visits (null family_member_id)
+      fullQuery = fullQuery.is('family_member_id', null);    }
+    
+    const fullResult = await fullQuery;
+    data = fullResult.data;
+    error = fullResult.error;
+      // If the query fails due to missing columns, try with basic columns
     if (error && error.message.includes('visit_date')) {
       console.log('visit_date column missing, trying without it...');
       
-      const basicQuery = await supabaseServer
+      let basicQuery = supabaseServer
         .from('visited_countries')
-        .select('id, country_id, user_id, countries (country_name, country_code, flag_url)')
+        .select('id, country_id, user_id, family_member_id, countries (country_name, country_code, flag_url)')
         .eq('user_id', user.id);
-        
-      data = basicQuery.data;
-      error = basicQuery.error;
+      
+      // Apply same family member filtering
+      if (familyMemberId) {
+        basicQuery = basicQuery.eq('family_member_id', parseInt(familyMemberId));
+      } else {
+        basicQuery = basicQuery.is('family_member_id', null);
+      }
+      
+      const basicResult = await basicQuery;
+      data = basicResult.data;
+      error = basicResult.error;
     }
     
     // If join fails, try without join
     if (error && error.message.includes('countries')) {
       console.log('Countries join failed, trying simple query...');
       
-      const simpleQuery = await supabaseServer
+      let simpleQuery = supabaseServer
         .from('visited_countries')
-        .select('id, country_id, user_id')
+        .select('id, country_id, user_id, family_member_id')
         .eq('user_id', user.id);
-        
-      data = simpleQuery.data;
-      error = simpleQuery.error;
+      
+      // Apply same family member filtering
+      if (familyMemberId) {
+        simpleQuery = simpleQuery.eq('family_member_id', parseInt(familyMemberId));
+      } else {
+        simpleQuery = simpleQuery.is('family_member_id', null);
+      }
+      
+      const simpleResult = await simpleQuery;
+      data = simpleResult.data;
+      error = simpleResult.error;
     }
       
     console.log('Supabase query result:', { data, error });
@@ -125,20 +152,28 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  
-  try {
-    const { countryId, notes, visitDate } = await request.json();
+    try {
+    const { countryId, notes, visitDate, familyMemberId } = await request.json();
     if (!countryId) {
       return NextResponse.json({ error: 'Country ID is required' }, { status: 400 });
     }
     
-    // Check if already visited
-    const { data: existing, error: existErr } = await supabaseServer
+    // Check if already visited by this user/family member
+    const existingQuery = supabaseServer
       .from('visited_countries')
       .select('id')
       .eq('user_id', user.id)
-      .eq('country_id', countryId)
-      .maybeSingle();
+      .eq('country_id', countryId);
+      
+    // If familyMemberId is provided, check for that specific member
+    if (familyMemberId) {
+      existingQuery.eq('family_member_id', familyMemberId);
+    } else {
+      // If no familyMemberId, check for user's personal visits (null family_member_id)
+      existingQuery.is('family_member_id', null);
+    }
+    
+    const { data: existing, error: existErr } = await existingQuery.maybeSingle();
       
     if (existErr) {
       throw existErr;
@@ -147,12 +182,16 @@ export async function POST(request: NextRequest) {
     if (existing) {
       return NextResponse.json({ error: 'Country already visited' }, { status: 400 });
     }
-    
-    // Try to insert with all columns, fall back if needed
+      // Try to insert with all columns, fall back if needed
     let insertData: any = {
       user_id: user.id,
       country_id: countryId
     };
+    
+    // Add family member ID if provided
+    if (familyMemberId) {
+      insertData.family_member_id = familyMemberId;
+    }
     
     // Add optional columns if they exist in the table
     if (notes !== undefined) {
@@ -171,13 +210,19 @@ export async function POST(request: NextRequest) {
       // If error is due to missing columns, try with minimal data
       if (error.message.includes('visit_date') || error.message.includes('notes')) {
         console.log('Falling back to minimal insert due to missing columns...');
+          const minimalInsertData: any = { 
+          user_id: user.id, 
+          country_id: countryId
+        };
+        
+        // Include family_member_id in fallback if provided
+        if (familyMemberId) {
+          minimalInsertData.family_member_id = familyMemberId;
+        }
         
         const { data: minimalData, error: minimalError } = await supabaseServer
           .from('visited_countries')
-          .insert([{ 
-            user_id: user.id, 
-            country_id: countryId
-          }])
+          .insert([minimalInsertData])
           .select();
           
         if (minimalError) {

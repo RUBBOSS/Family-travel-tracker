@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { FamilyMemberWithMeta } from '@/hooks/useFamilyMembers';
 
 // Define the types locally to avoid circular dependencies
 type UserStats = {
@@ -47,9 +48,21 @@ interface StatsOverviewProps {
   stats: Stats | null;
   isLoading: boolean;
   error: string | null;
+  selectedFamilyMemberId?: number | null;
+  familyMembers?: FamilyMemberWithMeta[];
+  selectedMemberVisitedCount?: number;
+  currentUser?: { username?: string } | null;
 }
 
-export default function StatsOverview({ stats, isLoading, error }: StatsOverviewProps) {
+export default function StatsOverview({ 
+  stats, 
+  isLoading, 
+  error, 
+  selectedFamilyMemberId, 
+  familyMembers = [],
+  selectedMemberVisitedCount = 0,
+  currentUser
+}: StatsOverviewProps) {
   
   if (isLoading) {
     return <StatsCardSkeleton />;
@@ -64,12 +77,22 @@ export default function StatsOverview({ stats, isLoading, error }: StatsOverview
   }
   
   const { general } = stats;
+    // Determine which stats to show based on selection
+  const selectedMember = selectedFamilyMemberId 
+    ? familyMembers.find(m => m.id === selectedFamilyMemberId)
+    : null;
+      const displayStats = {
+    totalCountries: general.totalCountries,
+    totalUsers: general.totalUsers,
+    totalVisits: selectedMemberVisitedCount,
+    topTraveler: general.topTraveler
+  };
   
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
       <StatsCard
         title="Total Countries"
-        value={general.totalCountries}
+        value={displayStats.totalCountries}
         icon="🌎"
         color="from-blue-500 to-blue-600"
         delay={0.1}
@@ -77,24 +100,22 @@ export default function StatsOverview({ stats, isLoading, error }: StatsOverview
       
       <StatsCard
         title="Family Members"
-        value={general.totalUsers}
+        value={displayStats.totalUsers}
         icon="👨‍👩‍👧‍👦"
         color="from-green-500 to-green-600"
         delay={0.2}
       />
-      
-      <StatsCard
-        title="Total Visits"
-        value={general.totalVisits}
+        <StatsCard
+        title={selectedMember ? `${selectedMember.name}'s Visits` : currentUser ? `${currentUser.username}'s Visits` : "Total Visits"}
+        value={displayStats.totalVisits}
         icon="✈️"
         color="from-purple-500 to-purple-600"
         delay={0.3}
       />
-      
-      <StatsCard
+        <StatsCard
         title="Top Traveler"
-        value={general.topTraveler.name}
-        subtitle={`${general.topTraveler.visits} countries`}
+        value={displayStats.topTraveler.name}
+        subtitle={`${displayStats.topTraveler.visits} countries`}
         icon="🏆"
         color="from-amber-500 to-amber-600"
         delay={0.4}

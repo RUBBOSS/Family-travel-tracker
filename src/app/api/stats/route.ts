@@ -75,20 +75,14 @@ export async function GET(request: NextRequest) {
       // Total visits for current user's family members
       supabaseServer.from('visited_countries')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id),
-      
-      // Top traveler among current user's family members
+        .eq('user_id', user.id),      // Top traveler among current user's family members
       supabaseServer.from('family_members')
         .select(`
           id,
           name,
-          avatar_color,
-          visited_count:visited_countries(count)
+          avatar_color
         `)
-        .eq('user_id', user.id)
-        .order('visited_count', { ascending: false })
-        .limit(1)
-        .single(),
+        .eq('user_id', user.id),
       
       // Most visited country
       supabaseServer.from('countries')
@@ -121,22 +115,68 @@ export async function GET(request: NextRequest) {
         `)
         .order('visitor_count', { ascending: false })
         .limit(10)
-    ]);
-      // Process results
+    ]);    // Process results
     const totalCountries = countryCountResult.count || 0;
     const totalFamilyMembers = familyMemberCountResult.count || 0;
-    const totalVisits = visitCountResult.count || 0;    // Format the top traveler
-    const topTraveler = topTravelerResult.data 
-      ? {
-          userId: topTravelerResult.data.id,
-          name: topTravelerResult.data.name,
-          color: topTravelerResult.data.avatar_color,
-          visits: topTravelerResult.data.visited_count
-        }
-      : {
-          name: 'No travelers yet',
-          visits: 0
-        };
+    const totalVisits = visitCountResult.count || 0;    // Get family members and calculate their visit counts manually
+    let topTraveler: any = {
+      name: 'No travelers yet',
+      visits: 0
+    };
+
+    // Always check current user's personal visits (family_member_id = null)
+    const { count: userPersonalVisits } = await supabaseServer
+      .from('visited_countries')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('family_member_id', null);
+
+    let allTravelers = [];
+
+    // Add current user's personal visits
+    if (userPersonalVisits && userPersonalVisits > 0) {
+      allTravelers.push({
+        id: user.id,
+        name: 'You',
+        avatar_color: '#6366f1',
+        visitCount: userPersonalVisits
+      });
+    }
+
+    // Add family members and their visit counts if they exist
+    if (topTravelerResult.data && topTravelerResult.data.length > 0) {
+      const familyMemberVisitCounts = await Promise.all(
+        topTravelerResult.data.map(async (member: any) => {
+          const { count } = await supabaseServer
+            .from('visited_countries')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('family_member_id', member.id);
+          
+          return {
+            ...member,
+            visitCount: count || 0
+          };
+        })
+      );
+
+      // Add family members with visits > 0
+      allTravelers.push(...familyMemberVisitCounts.filter(member => member.visitCount > 0));
+    }
+
+    // Find the traveler with the most visits
+    if (allTravelers.length > 0) {
+      const topTravelerData = allTravelers.reduce((max, current) => 
+        current.visitCount > max.visitCount ? current : max
+      );
+
+      topTraveler = {
+        name: topTravelerData.name,
+        visits: topTravelerData.visitCount,
+        userId: topTravelerData.id,
+        color: topTravelerData.avatar_color
+      };
+    }
     
     // Format the most visited country
     const mostVisitedCountry = mostVisitedCountryResult.data

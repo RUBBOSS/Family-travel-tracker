@@ -8,12 +8,13 @@ import { X, User } from 'lucide-react';
 interface FamilyMemberTabsProps {
   familyMembers: FamilyMemberWithMeta[];
   loading: boolean;
+  selectedMemberId: number | null;
   onDeleteMember: (id: number) => Promise<void>;
+  onMemberSelect: (memberId: number | null) => void;
 }
 
-export default function FamilyMemberTabs({ familyMembers, loading, onDeleteMember }: FamilyMemberTabsProps) {
+export default function FamilyMemberTabs({ familyMembers, loading, selectedMemberId, onDeleteMember, onMemberSelect }: FamilyMemberTabsProps) {
   const { currentUser } = useUserContext();
-  const [selectedMember, setSelectedMember] = useState<FamilyMemberWithMeta | null>(null);
 
   if (!currentUser) {
     return (
@@ -39,8 +40,8 @@ export default function FamilyMemberTabs({ familyMembers, loading, onDeleteMembe
         await onDeleteMember(memberId);
         
         console.log('Component: Delete successful, updating selected member');
-        if (selectedMember?.id === memberId) {
-          setSelectedMember(null);
+        if (selectedMemberId === memberId) {
+          onMemberSelect(null);
         }
         
         console.log('Component: Delete operation completed');
@@ -56,10 +57,12 @@ export default function FamilyMemberTabs({ familyMembers, loading, onDeleteMembe
       {/* Account Owner */}
       <div className="flex flex-wrap gap-3">        <div 
           className="relative group cursor-pointer focus:outline-none"
-          onClick={() => setSelectedMember(null)}
+          onClick={() => onMemberSelect(null)}
         >
           <div
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 shadow-xl hover:scale-105 focus:outline-none`}
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 shadow-xl hover:scale-105 focus:outline-none ${
+              selectedMemberId === null ? 'ring-2 ring-blue-400' : ''
+            }`}
             style={{ backgroundColor: currentUser.avatar_color, color: 'white' }}
           >
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-bold">
@@ -67,15 +70,16 @@ export default function FamilyMemberTabs({ familyMembers, loading, onDeleteMembe
             </div>
             <span className="font-medium">{currentUser.username} (You)</span>
           </div>
-        </div>        {/* Family Members */}
-        {familyMembers.map((member) => (
+        </div>        {/* Family Members */}        {familyMembers.map((member) => (
           <div 
             key={member.id}
             className="relative group cursor-pointer focus:outline-none"
-            onClick={() => setSelectedMember(member)}
+            onClick={() => onMemberSelect(member.id)}
           >
             <div
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 shadow-xl hover:scale-105 focus:outline-none`}
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 shadow-xl hover:scale-105 focus:outline-none ${
+                selectedMemberId === member.id ? 'ring-2 ring-blue-400' : ''
+              }`}
               style={{ backgroundColor: member.avatarColor || '#8b5cf6', color: 'white' }}
             >
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-bold">
@@ -103,20 +107,26 @@ export default function FamilyMemberTabs({ familyMembers, loading, onDeleteMembe
           <p className="text-slate-400 text-sm">No family members added yet</p>
           <p className="text-slate-500 text-xs">Click &quot;Add Member&quot; to get started</p>
         </div>
-      )}
-
-      {/* Selected member info */}
-      {selectedMember && (
+      )}      {/* Selected member info */}
+      {selectedMemberId && (
         <div className="mt-4 p-4 bg-slate-700/50 rounded-lg border border-slate-600">
           <h3 className="text-white font-medium mb-2">Currently viewing travels for:</h3>
-          <div className="flex items-center space-x-3">            <div 
-              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold"
-              style={{ backgroundColor: selectedMember.avatarColor || '#8b5cf6' }}
-            >
-              {selectedMember.name.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-slate-300">{selectedMember.name}</span>
-          </div>
+          {(() => {
+            const selectedMember = familyMembers.find(m => m.id === selectedMemberId);
+            if (!selectedMember) return null;
+            
+            return (
+              <div className="flex items-center space-x-3">
+                <div 
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                  style={{ backgroundColor: selectedMember.avatarColor || '#8b5cf6' }}
+                >
+                  {selectedMember.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-slate-300">{selectedMember.name}</span>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

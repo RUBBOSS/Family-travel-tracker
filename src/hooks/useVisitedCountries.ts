@@ -12,12 +12,12 @@ type VisitedCountry = {
   notes: string | null;
 };
 
-export function useVisitedCountries() {
+export function useVisitedCountries(selectedFamilyMemberId: number | null = null) {
   const { currentUser } = useUserContext();
   const [visitedCountries, setVisitedCountries] = useState<VisitedCountry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const lastFetchedUserId = useRef<string | null>(null);
+  const lastFetchedKey = useRef<string | null>(null);
   const isFetchingRef = useRef(false);
 
   const fetchVisitedCountries = useCallback(async () => {
@@ -25,12 +25,15 @@ export function useVisitedCountries() {
     if (!currentUser?.id) {
       setVisitedCountries([]);
       setIsLoading(false);
-      lastFetchedUserId.current = null;
+      lastFetchedKey.current = null;
       return;
     }
 
-    // Prevent duplicate requests for the same user
-    if (isFetchingRef.current || lastFetchedUserId.current === currentUser.id) {
+    // Create a cache key that includes both user ID and selected family member ID
+    const cacheKey = `${currentUser.id}-${selectedFamilyMemberId || 'none'}`;
+    
+    // Prevent duplicate requests for the same user and family member combination
+    if (isFetchingRef.current || lastFetchedKey.current === cacheKey) {
       return;
     }
 
@@ -51,8 +54,12 @@ export function useVisitedCountries() {
       
       const accessToken = sessionData.session.access_token;
       
-      // Make the API call with the auth token
-      const response = await fetch('/api/visited', {
+      // Make the API call with the auth token, including family member filter
+      const url = selectedFamilyMemberId 
+        ? `/api/visited?family_member_id=${selectedFamilyMemberId}`
+        : '/api/visited';
+        
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
@@ -80,7 +87,7 @@ export function useVisitedCountries() {
       }));
 
       setVisitedCountries(formattedData);
-      lastFetchedUserId.current = currentUser.id;
+      lastFetchedKey.current = cacheKey;
 
     } catch (err: any) {
       console.error('Error fetching visited countries:', err);
@@ -90,9 +97,9 @@ export function useVisitedCountries() {
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, selectedFamilyMemberId]);
 
-  const addCountry = useCallback(async (countryId: number, notes: string = '') => {
+  const addCountry = useCallback(async (countryId: number, notes: string = '', familyMemberId: number | null = null) => {
     if (!currentUser) return;
 
     try {
@@ -116,7 +123,8 @@ export function useVisitedCountries() {
         body: JSON.stringify({
           countryId,
           notes,
-          visitDate: new Date().toISOString()
+          visitDate: new Date().toISOString(),
+          familyMemberId
         })
       });
 
@@ -127,7 +135,7 @@ export function useVisitedCountries() {
       
       toast.success('Country added successfully!');
       // Force refresh by clearing the cache and re-fetching
-      lastFetchedUserId.current = null;
+      lastFetchedKey.current = null;
       await fetchVisitedCountries();
     } catch (err: any) {
       console.error('Error adding country:', err);
@@ -166,7 +174,7 @@ export function useVisitedCountries() {
       
       toast.success('Country removed successfully!');
       // Force refresh by clearing the cache and re-fetching
-      lastFetchedUserId.current = null;
+      lastFetchedKey.current = null;
       await fetchVisitedCountries();
     } catch (err: any) {
       console.error('Error removing country:', err);
@@ -181,7 +189,7 @@ export function useVisitedCountries() {
       fetchVisitedCountries();
     } else {
       setVisitedCountries([]);
-      lastFetchedUserId.current = null;
+      lastFetchedKey.current = null;
     }
   }, [currentUser?.id, fetchVisitedCountries]);
 

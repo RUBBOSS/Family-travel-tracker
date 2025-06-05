@@ -16,11 +16,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/countries/route.js"
     ],
-    "/api/stats/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/stats/route.js"
-    ],
     "/api/family-members/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -31,15 +26,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/visited/route.js"
     ],
-    "/api/visited/[id]/route": [
+    "/api/stats/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/visited/[id]/route.js"
-    ],
-    "/_not-found/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
+      "static/chunks/app/api/stats/route.js"
     ]
   }
 }

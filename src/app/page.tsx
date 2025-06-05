@@ -18,14 +18,30 @@ import { useFamilyMembers } from '@/hooks/useFamilyMembers';
 import { useStats } from '@/hooks/useStats';
 import { supabase } from '@/utils/supabaseClient';
 
-export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useState(false);  const { currentUser, isLoading } = useUserContext();
-  const { visitedCountries, addCountry, removeCountry } = useVisitedCountries();  const { familyMembers, addFamilyMember, deleteFamilyMember, loading: familyMembersLoading, isDeleting, fetchFamilyMembers } = useFamilyMembers();
-  const { stats, isLoading: statsLoading, error: statsError, refreshStats } = useStats();
-  const handleCountrySelect = async (countryId: number, notes?: string) => {
+export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedFamilyMemberId, setSelectedFamilyMemberId] = useState<number | null>(null);
+  const { currentUser, isLoading } = useUserContext();
+  const { visitedCountries, addCountry, removeCountry } = useVisitedCountries(selectedFamilyMemberId);const { familyMembers, addFamilyMember, deleteFamilyMember, loading: familyMembersLoading, isDeleting, fetchFamilyMembers } = useFamilyMembers();
+  const { stats, isLoading: statsLoading, error: statsError, refreshStats } = useStats();  const handleCountrySelect = async (countryId: number, notes?: string) => {
+    console.log('handleCountrySelect called with:', countryId, notes, 'familyMemberId:', selectedFamilyMemberId);
     try {
-      await addCountry(countryId, notes || '');
+      console.log('Calling addCountry...');
+      await addCountry(countryId, notes || '', selectedFamilyMemberId);
+      console.log('addCountry completed successfully');
+      // Refresh stats after adding a country
+      await refreshStats();
     } catch (error) {
       console.error('Failed to add country:', error);
+    }
+  };
+
+  const handleCountryRemove = async (countryId: number) => {
+    try {
+      await removeCountry(countryId);
+      // Refresh stats after removing a country
+      await refreshStats();
+    } catch (error) {
+      console.error('Failed to remove country:', error);
     }
   };
 
@@ -121,9 +137,16 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
       </header>      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Schema Setup Guide - only shows when DB setup issues are detected */}
-        <SchemaSetupGuide />
-          {/* Stats Overview */}
-        <StatsOverview stats={stats} isLoading={statsLoading} error={statsError} />
+        <SchemaSetupGuide />        {/* Stats Overview */}
+        <StatsOverview 
+          stats={stats} 
+          isLoading={statsLoading} 
+          error={statsError}
+          selectedFamilyMemberId={selectedFamilyMemberId}
+          familyMembers={familyMembers}
+          selectedMemberVisitedCount={visitedCountries.length}
+          currentUser={currentUser}
+        />
         
         {/* Family Member Selection */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
@@ -138,25 +161,43 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
             </button>          </div>          <FamilyMemberTabs 
             familyMembers={familyMembers} 
             loading={familyMembersLoading || isDeleting}
+            selectedMemberId={selectedFamilyMemberId}
             onDeleteMember={handleMemberDeleted}
+            onMemberSelect={setSelectedFamilyMemberId}
           />
-        </section>
-          {/* Country Search */}        <section className="relative z-10 bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-          <h2 className="text-xl font-semibold mb-4 text-white">Add a Country</h2>
+        </section>        {/* Country Search */}        
+        <section className="relative z-10 bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-white">Add a Country</h2>
+            {selectedFamilyMemberId ? (
+              <div className="text-sm text-slate-300">
+                Adding for: <span className="font-medium text-blue-400">
+                  {familyMembers.find(m => m.id === selectedFamilyMemberId)?.name}
+                </span>
+              </div>
+            ) : (
+              <div className="text-sm text-slate-300">
+                Adding for: <span className="font-medium text-blue-400">
+                  {currentUser?.username} (You)
+                </span>
+              </div>
+            )}
+          </div>
           <CountrySearch onCountryAdd={handleCountrySelect} />
         </section>
-        
-        {/* Interactive World Map */}
+          {/* Interactive World Map */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
           <h2 className="text-xl font-semibold mb-4 text-white">World Map</h2>
-          <WorldMap />
+          <WorldMap 
+            selectedFamilyMemberId={selectedFamilyMemberId}
+            familyMembers={familyMembers}
+          />
         </section>
           {/* Country Table */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-          <h2 className="text-xl font-semibold mb-4 text-white">Visited Countries</h2>
-          <CountryTable
+          <h2 className="text-xl font-semibold mb-4 text-white">Visited Countries</h2>          <CountryTable
             countries={tableCountries}
-            onRemoveCountry={(countryId) => removeCountry(parseInt(countryId))}
+            onRemoveCountry={(countryId) => handleCountryRemove(parseInt(countryId))}
           />
         </section>
       </div>
