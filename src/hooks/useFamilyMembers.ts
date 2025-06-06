@@ -11,15 +11,13 @@ export function useFamilyMembers() {
   const { currentUser } = useUserContext();
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false); // Flag to prevent concurrent operations
+  const [error, setError] = useState<string | null>(null);  const [isDeleting, setIsDeleting] = useState(false); // Flag to prevent concurrent operations
+
   const fetchFamilyMembers = useCallback(async () => {
-    // Don't fetch if user is not authenticated or if we're in the middle of a delete operation
-    if (!currentUser || isDeleting) {
-      if (!currentUser) {
-        setFamilyMembers([]);
-        setLoading(false);
-      }
+    // Don't fetch if user is not authenticated
+    if (!currentUser) {
+      setFamilyMembers([]);
+      setLoading(false);
       return;
     }
 
@@ -54,10 +52,11 @@ export function useFamilyMembers() {
       setError(null);
     } catch (err) {
       console.error('Error fetching family members:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch family members');    } finally {
+      setError(err instanceof Error ? err.message : 'Failed to fetch family members');
+    } finally {
       setLoading(false);
     }
-  }, [currentUser, isDeleting]);
+  }, [currentUser]);
 
   const addFamilyMember = useCallback(async (name: string, avatarColor: string) => {
     if (!currentUser) return;
@@ -78,24 +77,29 @@ export function useFamilyMembers() {
           'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({ name, avatarColor }),
-      });
-
-      if (!response.ok) {
+      });      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to add family member');
-      }      const data = await response.json();
+      }
+
+      const data = await response.json();
       setFamilyMembers(prev => [...prev, data.familyMember]);
       return data.familyMember;
     } catch (err) {
       console.error('Error adding family member:', err);
       throw err;
     }
-  }, [currentUser]);  const deleteFamilyMember = useCallback(async (id: number) => {
+  }, [currentUser]);
+
+  const deleteFamilyMember = useCallback(async (id: number) => {
     if (!currentUser || isDeleting) return;
     
     try {
       console.log('Attempting to delete family member:', id);
       setIsDeleting(true); // Set flag to prevent concurrent operations
+      
+      // Store original state for potential rollback
+      const originalMembers = familyMembers;
       
       // Optimistically update UI first
       setFamilyMembers(prev => {
@@ -111,8 +115,7 @@ export function useFamilyMembers() {
       if (!accessToken) {
         console.error('No access token available');
         // Revert optimistic update on error
-        setIsDeleting(false);
-        await fetchFamilyMembers();
+        setFamilyMembers(originalMembers);
         throw new Error('Authentication error');
       }
       
@@ -130,8 +133,7 @@ export function useFamilyMembers() {
         const errorData = await response.json();
         console.error('DELETE request failed:', errorData);
         // Revert optimistic update on error
-        setIsDeleting(false);
-        await fetchFamilyMembers();
+        setFamilyMembers(originalMembers);
         throw new Error(errorData.error || 'Failed to delete family member');
       }
 
@@ -143,8 +145,9 @@ export function useFamilyMembers() {
       throw err;
     } finally {
       setIsDeleting(false); // Always clear the flag
-    }
-  }, [currentUser, isDeleting, fetchFamilyMembers]);useEffect(() => {
+    }  }, [currentUser, isDeleting, familyMembers]);
+
+  useEffect(() => {
     // Only fetch if we have a current user
     if (currentUser) {
       fetchFamilyMembers();
@@ -154,6 +157,7 @@ export function useFamilyMembers() {
       setLoading(false);
     }
   }, [currentUser, fetchFamilyMembers]); // Keep dependencies but be more careful about when fetchFamilyMembers changes
+
   return {
     familyMembers,
     loading,

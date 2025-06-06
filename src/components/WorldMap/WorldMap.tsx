@@ -23,46 +23,22 @@ const DynamicWorldMap = dynamic(() => import('@/components/WorldMap/WorldMapSvg'
 interface WorldMapProps {
   selectedFamilyMemberId?: number | null;
   familyMembers?: FamilyMemberWithMeta[];
+  visitedCountryCodes?: string[];
+  isLoading?: boolean;
 }
 
-export default function WorldMap({ selectedFamilyMemberId, familyMembers = [] }: WorldMapProps) {
+export default function WorldMap({ selectedFamilyMemberId, familyMembers = [], visitedCountryCodes = [], isLoading = false }: WorldMapProps) {
   const { currentUser } = useUserContext();
-  const { visitedCountries, visitedCountryCodes, fetchVisitedCountries, isLoading } = useVisitedCountries(selectedFamilyMemberId);
-  const { totalCount: totalCountries } = useCountries();
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const prevSelectedMemberRef = useRef<number | null>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    // Debounce family member changes to prevent rapid successive API calls
-    if (currentUser && prevSelectedMemberRef.current !== selectedFamilyMemberId) {
-      // Clear any existing timeout
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-      
-      // Set a new timeout to delay the fetch
-      debounceTimeoutRef.current = setTimeout(() => {
-        prevSelectedMemberRef.current = selectedFamilyMemberId ?? null;
-        fetchVisitedCountries(true);
-      }, 100); // 100ms debounce
-    }
-    
-    // Cleanup timeout on unmount
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, [currentUser, selectedFamilyMemberId, fetchVisitedCountries]);
+  const { totalCount: totalCountries } = useCountries();  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   const handleMapLoad = useCallback(() => {
     setIsMapLoaded(true);
   }, []);
+
   const visitedPercentage = useMemo(() => {
     if (totalCountries === 0) return '0.0';
-    return ((visitedCountries.length / totalCountries) * 100).toFixed(1);
-  }, [visitedCountries.length, totalCountries]);
+    return ((visitedCountryCodes.length / totalCountries) * 100).toFixed(1);
+  }, [visitedCountryCodes.length, totalCountries]);
 
   return (
     <div className="relative">
@@ -99,9 +75,8 @@ export default function WorldMap({ selectedFamilyMemberId, familyMembers = [] }:
                   return 'World map';
                 }
               })()}
-            </h3>
-            <p className="text-slate-400 text-sm">
-              {visitedCountries.length} countries visited ({visitedPercentage}% of the world)
+            </h3>            <p className="text-slate-400 text-sm">
+              {visitedCountryCodes.length} countries visited ({visitedPercentage}% of the world)
             </p>
           </div>          <div className="flex items-center text-sm">
             <span className="flex items-center mr-4">
@@ -139,7 +114,7 @@ export default function WorldMap({ selectedFamilyMemberId, familyMembers = [] }:
         </div>
       </div>
       
-      {!isLoading && visitedCountries.length === 0 && isMapLoaded && (
+      {!isLoading && visitedCountryCodes.length === 0 && isMapLoaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">          <MapPin size={48} className="text-slate-600 mb-3" />          <p className="text-slate-400 text-center max-w-xs">
             {(() => {
               if (selectedFamilyMemberId) {

@@ -17,17 +17,17 @@ import { useVisitedCountries } from '@/hooks/useVisitedCountries';
 import { useFamilyMembers } from '@/hooks/useFamilyMembers';
 import { useStats } from '@/hooks/useStats';
 import { supabase } from '@/utils/supabaseClient';
+import { FamilyMember } from '@/db/schema-unified';
 
-export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useState(false);
+export default function Home() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFamilyMemberId, setSelectedFamilyMemberId] = useState<number | null>(null);
   const { currentUser, isLoading } = useUserContext();
-  const { visitedCountries, addCountry, removeCountry } = useVisitedCountries(selectedFamilyMemberId);const { familyMembers, addFamilyMember, deleteFamilyMember, loading: familyMembersLoading, isDeleting, fetchFamilyMembers } = useFamilyMembers();
+  const { visitedCountries, visitedCountryCodes, addCountry, removeCountry, isLoading: visitedCountriesLoading } = useVisitedCountries(selectedFamilyMemberId);
+  const { familyMembers, addFamilyMember, deleteFamilyMember, loading: familyMembersLoading, isDeleting, fetchFamilyMembers } = useFamilyMembers();
   const { stats, isLoading: statsLoading, error: statsError, refreshStats } = useStats();  const handleCountrySelect = async (countryId: number, notes?: string) => {
-    console.log('handleCountrySelect called with:', countryId, notes, 'familyMemberId:', selectedFamilyMemberId);
     try {
-      console.log('Calling addCountry...');
       await addCountry(countryId, notes || '', selectedFamilyMemberId);
-      console.log('addCountry completed successfully');
       // Refresh stats after adding a country
       await refreshStats();
     } catch (error) {
@@ -172,7 +172,7 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
             {selectedFamilyMemberId ? (
               <div className="text-sm text-slate-300">
                 Adding for: <span className="font-medium text-blue-400">
-                  {familyMembers.find(m => m.id === selectedFamilyMemberId)?.name}
+                    {familyMembers.find((m: FamilyMember) => m.id === selectedFamilyMemberId)?.name}
                 </span>
               </div>
             ) : (
@@ -187,10 +187,11 @@ export default function Home() {  const [isDialogOpen, setIsDialogOpen] = useSta
         </section>
           {/* Interactive World Map */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-          <h2 className="text-xl font-semibold mb-4 text-white">World Map</h2>
-          <WorldMap 
+          <h2 className="text-xl font-semibold mb-4 text-white">World Map</h2>          <WorldMap 
             selectedFamilyMemberId={selectedFamilyMemberId}
             familyMembers={familyMembers}
+            visitedCountryCodes={visitedCountryCodes}
+            isLoading={visitedCountriesLoading}
           />
         </section>
           {/* Country Table */}

@@ -31,10 +31,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/visited/route.js"
     ],
-    "/_not-found/page": [
+    "/api/visited/[id]/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
+      "static/chunks/app/api/visited/[id]/route.js"
     ]
   }
 }

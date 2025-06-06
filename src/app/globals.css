@@ -80,16 +80,21 @@
   }
 }
 
-/* Highlight SVG countries on hover */
-svg path:hover {
-  fill: #2563eb !important; /* Tailwind blue-600 */
+/* Enhanced SVG countries hover and transition effects */
+svg path {
+  transition: fill 0.2s ease, filter 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
   cursor: pointer;
-  filter: drop-shadow(0 0 4px #2563eb88);
+  pointer-events: visiblePainted;
+  vector-effect: non-scaling-stroke;
 }
 
-/* Optional: smooth transition */
-svg path {
-  transition: fill 0.2s, filter 0.2s;
+/* Prevent rapid event firing on complex SVG shapes */
+svg {
+  pointer-events: bounding-box;
+}
+
+svg path:hover {
+  pointer-events: all;
 }
 
 /* Remove default focus outlines that might create white borders */

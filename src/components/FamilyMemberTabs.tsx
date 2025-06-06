@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useUserContext } from '@/context/UserContext';
 import { FamilyMemberWithMeta } from '@/hooks/useFamilyMembers';
 import { X, User } from 'lucide-react';
+import ConfirmationDialog from './ConfirmationDialog';
 
 interface FamilyMemberTabsProps {
   familyMembers: FamilyMemberWithMeta[];
@@ -15,6 +16,15 @@ interface FamilyMemberTabsProps {
 
 export default function FamilyMemberTabs({ familyMembers, loading, selectedMemberId, onDeleteMember, onMemberSelect }: FamilyMemberTabsProps) {
   const { currentUser } = useUserContext();
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    memberId: number | null;
+    memberName: string;
+  }>({
+    isOpen: false,
+    memberId: null,
+    memberName: ''
+  });
 
   if (!currentUser) {
     return (
@@ -31,25 +41,41 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
         <p className="text-slate-300">Loading family members...</p>
       </div>
     );
-  }  const handleDeleteMember = async (memberId: number, e: React.MouseEvent) => {
+  }  const handleDeleteMember = async (memberId: number, memberName: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (confirm('Are you sure you want to remove this family member? This will also remove all their visited countries.')) {
-      try {
-        console.log('Component: Starting delete for member ID:', memberId);
-        await onDeleteMember(memberId);
-        
-        console.log('Component: Delete successful, updating selected member');
-        if (selectedMemberId === memberId) {
-          onMemberSelect(null);
-        }
-        
-        console.log('Component: Delete operation completed');
-      } catch (error) {
-        console.error('Component: Delete failed:', error);
-        alert(`Failed to delete family member: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+    setConfirmDialog({
+      isOpen: true,
+      memberId,
+      memberName
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDialog.memberId) return;
+    
+    try {
+      console.log('Component: Starting delete for member ID:', confirmDialog.memberId);
+      await onDeleteMember(confirmDialog.memberId);
+      
+      console.log('Component: Delete successful, updating selected member');
+      if (selectedMemberId === confirmDialog.memberId) {
+        onMemberSelect(null);
       }
+      
+      console.log('Component: Delete operation completed');
+    } catch (error) {
+      console.error('Component: Delete failed:', error);
+      alert(`Failed to delete family member: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
     }
+  };
+
+  const handleCloseDialog = () => {
+    setConfirmDialog({
+      isOpen: false,
+      memberId: null,
+      memberName: ''
+    });
   };
 
   return (
@@ -86,10 +112,9 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
                 {member.name.charAt(0).toUpperCase()}
               </div>
               <span className="font-medium">{member.name}</span>
-              
-              {/* Delete button - only visible on hover */}
+                {/* Delete button - only visible on hover */}
               <button
-                onClick={(e) => handleDeleteMember(member.id, e)}
+                onClick={(e) => handleDeleteMember(member.id, member.name, e)}
                 className="ml-2 p-1 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 hover:bg-white/30 transition-all"
                 title="Remove family member"
               >
@@ -125,10 +150,22 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
                 </div>
                 <span className="text-slate-300">{selectedMember.name}</span>
               </div>
-            );
-          })()}
+            );          })()}
         </div>
       )}
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={handleCloseDialog}
+        onConfirm={handleConfirmDelete}
+        title="Remove Family Member"
+        message="Are you sure you want to remove this family member? This will permanently delete all their travel data and visited countries."
+        confirmText="Remove Member"
+        cancelText="Keep Member"
+        type="danger"
+        memberName={confirmDialog.memberName}
+      />
     </div>
   );
 }
