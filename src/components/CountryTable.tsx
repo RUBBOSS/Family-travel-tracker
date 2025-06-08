@@ -81,13 +81,12 @@ export default function CountryTable({
             Start exploring the world!
           </p>
         </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
+      ) : (        <div className="overflow-x-auto">
+          <table className="w-full table-fixed sm:table-auto">
             <thead>
               <tr className="border-b border-slate-700">
                 <th
-                  className="cursor-pointer px-4 py-3 text-left font-medium text-slate-300 transition-colors hover:text-white"
+                  className="cursor-pointer px-2 sm:px-4 py-3 text-left font-medium text-slate-300 transition-colors hover:text-white w-[45%] sm:w-auto"
                   onClick={() => handleSort('name')}
                 >
                   Country
@@ -98,22 +97,22 @@ export default function CountryTable({
                   )}
                 </th>
                 <th
-                  className="cursor-pointer px-4 py-3 text-left font-medium text-slate-300 transition-colors hover:text-white"
+                  className="cursor-pointer px-2 sm:px-4 py-3 text-left font-medium text-slate-300 transition-colors hover:text-white w-[40%] sm:w-auto"
                   onClick={() => handleSort('date')}
                 >
-                  Visit Date
+                  <span className="hidden sm:inline">Visit Date</span>
+                  <span className="sm:hidden">Date</span>
                   {sortBy === 'date' && (
                     <span className="ml-1">
                       {sortOrder === 'asc' ? '↑' : '↓'}
                     </span>
                   )}
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-slate-300">
+                <th className="px-2 sm:px-4 py-3 text-left font-medium text-slate-300 hidden sm:table-cell">
                   Notes
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-slate-300">
-                  Actions
-                </th>
+                <th className="px-2 sm:px-4 py-3 text-right font-medium text-slate-300 w-[15%] sm:w-auto">
+                  <span className="sr-only">Actions</span>                </th>
               </tr>
             </thead>
             <tbody>
@@ -122,44 +121,46 @@ export default function CountryTable({
                   key={country.id}
                   className="border-b border-slate-700/50 transition-colors hover:bg-slate-700/30"
                 >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                  <td className="px-2 sm:px-4 py-3">
+                    <div className="flex items-center gap-2 min-w-0">
                       {country.flagUrl ? (
                         <Image
                           src={country.flagUrl}
                           alt={`${country.countryName} flag`}
                           width={24}
                           height={16}
-                          className="h-4 w-6 rounded-sm object-cover"
+                          className="h-4 w-6 rounded-sm object-cover flex-shrink-0"
                         />
                       ) : (
-                        <div className="flex h-4 w-6 items-center justify-center rounded-sm bg-slate-600 text-xs text-white">
+                        <div className="flex h-4 w-6 items-center justify-center rounded-sm bg-slate-600 text-xs text-white flex-shrink-0">
                           {country.countryCode}
                         </div>
                       )}
-                      <span className="font-medium text-white">
+                      <span className="font-medium text-white truncate text-sm sm:text-base">
                         {country.countryName}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <Calendar className="h-4 w-4" />
-                      {formatDate(country.visitDate)}
+                  <td className="px-2 sm:px-4 py-3">
+                    <div className="flex items-center gap-1 sm:gap-2 text-slate-300 min-w-0">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm truncate leading-tight">
+                        {formatDate(country.visitDate)}
+                      </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-2 sm:px-4 py-3 hidden sm:table-cell">
                     <span className="text-slate-400">
                       {country.notes || '-'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-2 sm:px-4 py-3 text-right">
                     <button
                       onClick={() => onRemoveCountry?.(country.id)}
                       className="rounded p-1 text-red-400 transition-colors hover:bg-red-400/10 hover:text-red-300"
                       title="Remove country"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </td>
                 </tr>

@@ -25,9 +25,9 @@ export default function Home() {
   const { currentUser, isLoading } = useUserContext();
   const { visitedCountries, visitedCountryCodes, addCountry, removeCountry, isLoading: visitedCountriesLoading } = useVisitedCountries(selectedFamilyMemberId);
   const { familyMembers, addFamilyMember, deleteFamilyMember, loading: familyMembersLoading, isDeleting, fetchFamilyMembers } = useFamilyMembers();
-  const { stats, isLoading: statsLoading, error: statsError, refreshStats } = useStats();  const handleCountrySelect = async (countryId: number, notes?: string) => {
+  const { stats, isLoading: statsLoading, error: statsError, refreshStats } = useStats();  const handleCountrySelect = async (countryId: number, notes?: string, visitDate?: string) => {
     try {
-      await addCountry(countryId, notes || '', selectedFamilyMemberId);
+      await addCountry(countryId, notes || '', selectedFamilyMemberId, visitDate);
       // Refresh stats after adding a country
       await refreshStats();
     } catch (error) {
@@ -86,34 +86,37 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
-      {/* Header */}
-      <header className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700 sticky top-0 z-50">
+      {/* Header */}      <header className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
+          <div className="flex justify-between items-center py-4 md:py-6">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
               <motion.div 
-                className="text-3xl"
+                className="text-2xl sm:text-3xl flex-shrink-0"
                 initial={{ rotate: -15 }}
                 animate={{ rotate: 15 }}
                 transition={{ repeat: Infinity, repeatType: 'reverse', duration: 2 }}
               >
                 🌍
               </motion.div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">Family Travel Tracker</h1>
-                <p className="text-slate-400">Discover the world together</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white truncate">
+                  <span className="hidden sm:inline">Family Travel Tracker</span>
+                  <span className="sm:hidden">Travel Tracker</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-400 hidden sm:block">Discover the world together</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
               {currentUser && (
                 <>
-                  <div className="text-right">
+                  <div className="text-right hidden md:block">
                     <p className="text-sm text-slate-400">Current traveler</p>
                     <p className="font-semibold" style={{ color: currentUser.avatar_color }}>{currentUser.username}</p>
                   </div>
                   <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg" 
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-lg flex-shrink-0" 
                     style={{ backgroundColor: currentUser.avatar_color }}
+                    title={currentUser.username}
                   >
                     {currentUser.username.charAt(0).toUpperCase()}
                   </div>                  <button 
@@ -123,18 +126,18 @@ export default function Home() {
                         module.clearAuthState();
                       });
                     }}
-                    className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md flex items-center gap-2 transition-colors"
+                    className="bg-red-600 hover:bg-red-700 text-white py-1.5 px-2 sm:py-2 sm:px-4 rounded-md flex items-center gap-1 sm:gap-2 transition-colors text-sm sm:text-base"
                     aria-label="Logout"
                   >
-                    <LogOut size={16} />
-                    <span>Logout</span>
+                    <LogOut size={14} className="sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Logout</span>
                   </button>
                 </>
               )}
             </div>
           </div>
         </div>
-      </header>      {/* Main Content */}
+      </header>{/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Schema Setup Guide - only shows when DB setup issues are detected */}
         <SchemaSetupGuide />        {/* Stats Overview */}

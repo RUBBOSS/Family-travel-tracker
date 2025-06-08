@@ -10,12 +10,13 @@ interface Country {
 }
 
 interface CountrySearchProps {
-  onCountryAdd?: (countryId: number, notes?: string) => void;
+  onCountryAdd?: (countryId: number, notes?: string, visitDate?: string) => void;
 }
 
 export default function CountrySearch({ onCountryAdd }: CountrySearchProps) {
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState('');
+  const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [countries, setCountries] = useState<Country[]>([]);
@@ -64,20 +65,20 @@ export default function CountrySearch({ onCountryAdd }: CountrySearchProps) {
     setSelectedCountry(country);
     setIsOpen(false);
     setFilteredCountries([]);
-  };
-  const handleAddCountry = () => {
+  };  const handleAddCountry = () => {
     if (selectedCountry) {
-      onCountryAdd?.(selectedCountry.id, notes);
+      onCountryAdd?.(selectedCountry.id, notes, visitDate);
       setQuery('');
       setNotes('');
+      setVisitDate(new Date().toISOString().split('T')[0]); // Reset to today
       setSelectedCountry(null);
       setFilteredCountries([]);
     }
   };
-
   const handleClear = () => {
     setQuery('');
     setNotes('');
+    setVisitDate(new Date().toISOString().split('T')[0]); // Reset to today
     setSelectedCountry(null);
     setIsOpen(false);
     setFilteredCountries([]);
@@ -85,8 +86,7 @@ export default function CountrySearch({ onCountryAdd }: CountrySearchProps) {
 
   const handleClickOutside = () => {
     setIsOpen(false);
-  };  return (
-    <div className="relative z-[9999]">
+  };  return (    <div className="relative z-[9999]">
       <div className="space-y-4">
         {/* Notes Input */}
         <div className="relative">
@@ -100,7 +100,21 @@ export default function CountrySearch({ onCountryAdd }: CountrySearchProps) {
             rows={3}
             className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
           />
-        </div>        {/* Country Search Input */}
+        </div>        {/* Visit Date Input */}
+        <div className="relative">
+          <label htmlFor="visit-date" className="block text-sm font-medium text-slate-300 mb-2">
+            Visit Date
+          </label>
+          <input
+            type="date"
+            id="visit-date"
+            name="visitDate"
+            value={visitDate}
+            onChange={(e) => setVisitDate(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white cursor-pointer hover:bg-slate-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            max={new Date().toISOString().split('T')[0]} // Prevent future dates
+          />
+        </div>{/* Country Search Input */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input
@@ -134,8 +148,7 @@ export default function CountrySearch({ onCountryAdd }: CountrySearchProps) {
                 <span className="text-green-400 text-sm">✓</span>
                 <span className="font-medium text-white">{selectedCountry.country_name}</span>
                 <span className="text-slate-400 text-sm">({selectedCountry.country_code})</span>
-              </div>
-              <button
+              </div>              <button
                 onClick={() => {
                   setSelectedCountry(null);
                   setQuery('');
@@ -146,10 +159,8 @@ export default function CountrySearch({ onCountryAdd }: CountrySearchProps) {
               </button>
             </div>
           </div>
-        )}
-
-        {/* Add/Clear Buttons */}
-        {(selectedCountry || notes.trim()) && (
+        )}        {/* Add/Clear Buttons */}
+        {(selectedCountry || notes.trim() || visitDate !== new Date().toISOString().split('T')[0]) && (
           <div className="flex gap-2">
             <button
               onClick={handleAddCountry}

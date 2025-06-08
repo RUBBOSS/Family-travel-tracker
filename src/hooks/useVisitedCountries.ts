@@ -116,7 +116,7 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
     }
   }, [currentUser?.id, selectedFamilyMemberId]); // Stable dependencies
 
-  const addCountry = useCallback(async (countryId: number, notes: string = '', familyMemberId: number | null = null) => {
+  const addCountry = useCallback(async (countryId: number, notes: string = '', familyMemberId: number | null = null, visitDate?: string) => {
     if (!currentUser) return;
 
     try {
@@ -130,6 +130,9 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
         throw new Error('Authentication error');
       }
       
+      // Use provided visit date or default to current date
+      const dateToUse = visitDate ? new Date(visitDate).toISOString() : new Date().toISOString();
+      
       // Make the API call with the auth token
       const response = await fetch('/api/visited', {
         method: 'POST',
@@ -140,7 +143,7 @@ export function useVisitedCountries(selectedFamilyMemberId: number | null = null
         body: JSON.stringify({
           countryId,
           notes,
-          visitDate: new Date().toISOString(),
+          visitDate: dateToUse,
           familyMemberId
         })
       });
