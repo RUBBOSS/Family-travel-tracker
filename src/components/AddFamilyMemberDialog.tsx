@@ -35,8 +35,7 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
   const [customColor, setCustomColor] = useState('');
   const [useCustomColor, setUseCustomColor] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [error, setError] = useState<string | null>(null);  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name.trim()) {
@@ -44,19 +43,49 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
       return;
     }
 
+    console.log('AddFamilyMemberDialog: Setting loading to true');
     setLoading(true);
     setError(null);
 
-    try {      // Use the passed addFamilyMember function if available, otherwise fall back to direct API call
+    try {
+      console.log('AddFamilyMemberDialog: Starting to add family member', { name: name.trim() });
+      
+      // Use the passed addFamilyMember function if available, otherwise fall back to direct API call
       const finalColor = useCustomColor ? customColor : selectedColor;
       
       if (addFamilyMember) {
+        console.log('AddFamilyMemberDialog: Using hook addFamilyMember function');
         await addFamilyMember(name.trim(), finalColor);
-      } else {
+        console.log('AddFamilyMemberDialog: Hook function completed successfully');      } else {        console.log('AddFamilyMemberDialog: Using fallback direct API call - addFamilyMember not available');
+        
+        // Get auth token for direct API call
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        
+        console.log('AddFamilyMemberDialog: Getting session for fallback API call');
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('AddFamilyMemberDialog: Session error in fallback:', sessionError);
+          throw new Error('Authentication error: ' + sessionError.message);
+        }
+        
+        const accessToken = sessionData.session?.access_token;
+        
+        if (!accessToken) {
+          console.error('AddFamilyMemberDialog: No access token in fallback');
+          throw new Error('Authentication error - no access token');
+        }
+        
+        console.log('AddFamilyMemberDialog: Making fallback API request with token');
         const response = await fetch('/api/family-members', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
           },
           body: JSON.stringify({
             name: name.trim(),
@@ -64,27 +93,48 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
           }),
         });
 
+        console.log('AddFamilyMemberDialog: Fallback API response status:', response.status);
+
         if (!response.ok) {
           const errorData = await response.json();
+          console.error('AddFamilyMemberDialog: Fallback API error:', errorData);
           throw new Error(errorData.error || 'Failed to add family member');
         }
-      }      // Reset form
+        
+        const responseData = await response.json();
+        console.log('AddFamilyMemberDialog: Fallback API call completed successfully', responseData);
+      }
+
+      // Reset form
+      console.log('AddFamilyMemberDialog: Resetting form');
       setName('');
       setSelectedColor(AVATAR_COLORS[0]);
       setCustomColor('');
       setUseCustomColor(false);
       setError(null);
       
-      // Notify parent component
+      // Notify parent component - wrap in try-catch to prevent errors from breaking flow
       if (onMemberAdded) {
-        onMemberAdded();
+        try {
+          console.log('AddFamilyMemberDialog: Calling onMemberAdded callback');
+          onMemberAdded();
+        } catch (callbackError) {
+          console.error('AddFamilyMemberDialog: Error in onMemberAdded callback:', callbackError);
+        }
       }
       
-      onClose();
+      // Close dialog - wrap in try-catch to prevent errors from breaking flow
+      try {
+        console.log('AddFamilyMemberDialog: Closing dialog');
+        onClose();
+      } catch (closeError) {
+        console.error('AddFamilyMemberDialog: Error closing dialog:', closeError);
+      }
     } catch (err) {
-      console.error('Error adding family member:', err);
+      console.error('AddFamilyMemberDialog: Error adding family member:', err);
       setError(err instanceof Error ? err.message : 'Failed to add family member');
     } finally {
+      console.log('AddFamilyMemberDialog: Setting loading to false in finally block');
       setLoading(false);
     }
   };

@@ -27,6 +27,10 @@
       "static/chunks/_app-pages-browser_src_utils_clearAuth_ts.js"
     ]
   },
+  "components\\AddFamilyMemberDialog.tsx -> @supabase/supabase-js": {
+    "id": "components\\AddFamilyMemberDialog.tsx -> @supabase/supabase-js",
+    "files": []
+  },
   "components\\WorldMap\\WorldMap.tsx -> @/components/WorldMap/WorldMapSvg": {
     "id": "components\\WorldMap\\WorldMap.tsx -> @/components/WorldMap/WorldMapSvg",
     "files": [

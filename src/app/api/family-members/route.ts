@@ -81,18 +81,22 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Family members POST API called');
     const user = await getUserFromRequest(request);
     
     if (!user) {
+      console.log('POST: No user found, returning unauthorized');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('POST: User authenticated:', user.id);
     const { name, avatarColor } = await request.json();
+    console.log('POST: Request data:', { name, avatarColor });
 
     if (!name || !name.trim()) {
+      console.log('POST: Name validation failed');
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-    }
-
+    }    console.log('POST: Inserting family member into database');
     const { data: familyMember, error } = await supabaseServer
       .from('family_members')
       .insert({
@@ -101,12 +105,14 @@ export async function POST(request: NextRequest) {
         avatar_color: avatarColor || '#3B82F6'
       })
       .select()
-      .single();    if (error) {
+      .single();
+
+    console.log('POST: Database operation result:', { familyMember, error });
+
+    if (error) {
       console.error('Error creating family member:', error);
       return NextResponse.json({ error: 'Failed to create family member' }, { status: 500 });
-    }
-
-    // Transform snake_case to camelCase to match our TypeScript types
+    }    // Transform snake_case to camelCase to match our TypeScript types
     const transformedFamilyMember = {
       id: familyMember.id,
       userId: familyMember.user_id,
@@ -116,6 +122,7 @@ export async function POST(request: NextRequest) {
       updatedAt: familyMember.updated_at
     };
 
+    console.log('POST: Returning success response:', transformedFamilyMember);
     return NextResponse.json({ familyMember: transformedFamilyMember });
   } catch (error) {
     console.error('Error in family members POST:', error);

@@ -57,19 +57,31 @@ export function useFamilyMembers() {
       setLoading(false);
     }
   }, [currentUser]);
-
   const addFamilyMember = useCallback(async (name: string, avatarColor: string) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('useFamilyMembers: No current user, returning early');
+      throw new Error('No user authenticated');
+    }
     
     try {
+      console.log('useFamilyMembers: Starting addFamilyMember', { name, avatarColor });
+      
       // Get the current user's session for the auth token
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('useFamilyMembers: Session error:', sessionError);
+        throw new Error('Session error: ' + sessionError.message);
+      }
+      
       const accessToken = sessionData.session?.access_token;
       
       if (!accessToken) {
-        throw new Error('Authentication error');
+        console.error('useFamilyMembers: No access token available');
+        throw new Error('Authentication error - no access token');
       }
       
+      console.log('useFamilyMembers: Making API request');
       const response = await fetch('/api/family-members', {
         method: 'POST',
         headers: {
@@ -77,16 +89,35 @@ export function useFamilyMembers() {
           'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({ name, avatarColor }),
-      });      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add family member');
+      });
+
+      console.log('useFamilyMembers: API response status:', response.status);
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to add family member';
+        try {
+          const errorData = await response.json();
+          console.error('useFamilyMembers: API error response:', errorData);
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          console.error('useFamilyMembers: Failed to parse error response:', parseError);
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log('useFamilyMembers: API success, updating state:', data);
+      
+      if (!data.familyMember) {
+        console.error('useFamilyMembers: No familyMember in response:', data);
+        throw new Error('Invalid response - no family member data');
+      }
+      
       setFamilyMembers(prev => [...prev, data.familyMember]);
       return data.familyMember;
     } catch (err) {
-      console.error('Error adding family member:', err);
+      console.error('useFamilyMembers: Error adding family member:', err);
+      // Re-throw the error so it can be handled by the component
       throw err;
     }
   }, [currentUser]);

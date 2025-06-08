@@ -151,14 +151,18 @@ export default function Home() {
         {/* Family Member Selection */}
         <section className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-white">Family Members</h2>
-            <button 
-              className="btn-primary flex items-center gap-2"
+            <h2 className="text-xl font-semibold text-white">Family Members</h2>            <button 
+              className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => setIsDialogOpen(true)}
+              disabled={familyMembersLoading || isLoading || !currentUser}
             >
               <Plus size={16} />
-              <span>Add Member</span>
-            </button>          </div>          <FamilyMemberTabs 
+              <span>
+                {familyMembersLoading ? 'Loading...' : 
+                 isLoading ? 'Authenticating...' :
+                 !currentUser ? 'Sign in required' : 'Add Member'}
+              </span>
+            </button></div>          <FamilyMemberTabs 
             familyMembers={familyMembers} 
             loading={familyMembersLoading || isDeleting}
             selectedMemberId={selectedFamilyMemberId}
