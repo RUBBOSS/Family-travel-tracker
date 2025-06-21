@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "next.config.js",
+      "use": "@vercel/next"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://yipvctqgluwqwaashbat.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpcHZjdHFnbHV3cXdhYXNoYmF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4NjE1NjksImV4cCI6MjA2NDQzNzU2OX0.l3-_KNjgqlj0RkPuTcutxYtx837RLwDS0T0tbVOIIwM",
+    "DATABASE_URL": "postgresql://postgres:FNh9LH5O1ODmst7o@db.yipvctqgluwqwaashbat.supabase.co:5432/postgres?sslmode=require"
+  }
+}

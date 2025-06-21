@@ -2,6 +2,7 @@
 
 import { createContext, useState, useEffect, useContext, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/utils/supabaseClient';
+import { Session, User } from '@supabase/supabase-js';
 
 // Define the type for user profile
 export interface UserProfile {
@@ -28,6 +29,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const isAuthenticatedRef = useRef<boolean>(false);
 
   // Function to check if user_profiles table exists
@@ -49,186 +51,91 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Function to fetch user profile data
-  const fetchUserProfile = useCallback(async (authUser: any): Promise<UserProfile | null> => {
-    if (!authUser || !authUser.id) {
+  const fetchUserProfile = useCallback(async (authUser: User): Promise<UserProfile | null> => {
+    if (!authUser?.id) {
       console.log('No auth user provided to fetchUserProfile');
       return null;
     }
-    
-    // Double-check auth state before making any database calls
-    if (!isAuthenticatedRef.current) {
-      console.log('User not authenticated, skipping profile fetch');
-      return null;
-    }
-    
+
     try {
       // First check if the table exists
       const tableExists = await checkTableExists();
       if (!tableExists) {
-        console.error('user_profiles table does not exist or is not accessible');
-        
-        // Return a basic profile if table doesn't exist
-        const username = authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'User';
-        const fullName = authUser.user_metadata?.full_name || username;
-        
+        console.log('user_profiles table does not exist, using basic profile');
         return {
           id: authUser.id,
-          username: username,
-          full_name: fullName,
+          username: authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'User',
+          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
           avatar_color: '#3B82F6',
-          email: authUser.email
+          email: authUser.email || undefined
         };
       }
 
-      const { data: profiles, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('id', authUser.id);
-        
+        .eq('id', authUser.id)
+        .single();
+
       if (profileError) {
-        console.error('Error fetching user profile:', {
-          message: profileError.message,
-          details: profileError.details,
-          hint: profileError.hint,
-          code: profileError.code
-        });
-        
-        // Try to get username from auth metadata first, then fallback to email prefix
-        const username = authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'User';
-        const fullName = authUser.user_metadata?.full_name || username;
-        
-        // Return a basic profile if database query fails
+        console.error('Error fetching profile:', profileError);
         return {
           id: authUser.id,
-          username: username,
-          full_name: fullName,
+          username: authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'User',
+          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
           avatar_color: '#3B82F6',
-          email: authUser.email
+          email: authUser.email || undefined
         };
       }
 
-      // Check if user profile exists in the result
-      const profile = profiles && profiles.length > 0 ? profiles[0] : null;
-      
-      if (!profile) {
-        console.log('No user profile found in database, attempting to create one...');
-        
-        // Try to create a user profile in the database
-        try {
-          const username = authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'User';
-          const fullName = authUser.user_metadata?.full_name || username;
-          
-          const newProfile = {
-            id: authUser.id,
-            username: username,
-            full_name: fullName,
-            avatar_color: '#3B82F6'
-          };
-
-          const { data: createdProfile, error: createError } = await supabase
-            .from('user_profiles')
-            .insert([newProfile])
-            .select();
-
-          if (createError) {
-            console.error('Error creating user profile:', createError);
-            // Return fallback profile even if creation fails
-            return {
-              ...newProfile,
-              email: authUser.email
-            };
-          }
-
-          console.log('✅ User profile created successfully:', createdProfile);
-          const profileData = createdProfile && createdProfile.length > 0 ? createdProfile[0] : newProfile;
-          return {
-            ...profileData,
-            email: authUser.email
-          };
-        } catch (err) {
-          console.error('Error creating user profile:', err);
-          // Return fallback profile
-          const username = authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'User';
-          const fullName = authUser.user_metadata?.full_name || username;
-          
-          return {
-            id: authUser.id,
-            username: username,
-            full_name: fullName,
-            avatar_color: '#3B82F6',
-            email: authUser.email
-          };
-        }
-      }
-      
-      return {
-        id: profile.id,
-        username: profile.username,
-        full_name: profile.full_name || profile.username,
-        avatar_color: profile.avatar_color,
-        email: authUser.email
-      };
+      return profile;
     } catch (err) {
       console.error('Error in fetchUserProfile:', err);
       return null;
     }
   }, [checkTableExists]);
 
-  // Initial user load and auth state change subscription
   useEffect(() => {
-    async function loadUser() {
-      setIsLoading(true);
+    const initializeAuth = async () => {
       try {
         // Get initial session
-        const { data, error: supabaseError } = await supabase.auth.getUser();
-        if (supabaseError) throw supabaseError;
-        
-        if (data?.user) {
+        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        if (initialSession?.user) {
           isAuthenticatedRef.current = true;
-          const userProfile = await fetchUserProfile(data.user);
-          setCurrentUser(userProfile);
-        } else {
-          isAuthenticatedRef.current = false;
-          setCurrentUser(null);
+          setSession(initialSession);
+          const profile = await fetchUserProfile(initialSession.user);
+          setCurrentUser(profile);
         }
-      } catch (err: any) {
-        console.error('Error loading user:', err);
-        setError(err.message);
+
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+          console.log('Auth state changed:', event);
+          setSession(newSession);
+
+          if (event === 'SIGNED_IN' && newSession?.user) {
+            isAuthenticatedRef.current = true;
+            const profile = await fetchUserProfile(newSession.user);
+            setCurrentUser(profile);
+          } else if (event === 'SIGNED_OUT') {
+            isAuthenticatedRef.current = false;
+            setCurrentUser(null);
+          }
+        });
+
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (err) {
+        console.error('Error initializing auth:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setIsLoading(false);
       }
-    }
-    
-    loadUser();
-    
-    // Set up auth state change listener
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_OUT' || !session?.user) {
-          isAuthenticatedRef.current = false;
-          setCurrentUser(null);
-          setError(null);
-          setIsLoading(false);
-        } else if (session?.user) {
-          isAuthenticatedRef.current = true;
-          try {
-            const userProfile = await fetchUserProfile(session.user);
-            setCurrentUser(userProfile);
-            setError(null);
-          } catch (err: any) {
-            console.error('Error fetching profile after auth change:', err);
-            setError(err.message);
-          } finally {
-            setIsLoading(false);
-          }
-        }
-      }
-    );
-    
-    // Clean up the subscription when the component unmounts
-    return () => {
-      authListener?.subscription.unsubscribe();
     };
+
+    initializeAuth();
   }, [fetchUserProfile]);
 
   // Create the context value object with all required properties

@@ -10,11 +10,25 @@ export default function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const context = useUserContext();
-  
-  // Debug context
+
   useEffect(() => {
-    console.log("AuthForm context:", context);
-  }, [context]);
+    // Check and restore session on component mount
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        
+        if (session?.user) {
+          // Session exists, user is already logged in
+          console.log('Existing session found');
+        }
+      } catch (e) {
+        console.error('Error checking session:', e);
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,57 +36,44 @@ export default function AuthForm() {
     setError(null);
     
     try {
-      let authError = null;
-      
       if (isLogin) {
-        const result = await supabase.auth.signInWithPassword({ email, password });
-        authError = result.error;
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         
-        if (!authError) {
-          // Login successful - user will be set automatically by context
+        if (signInError) throw signInError;
+        
+        if (data?.user) {
           console.log('Login successful');
         }
       } else {
-        // Validate username for registration
         if (!username.trim()) {
           setError('Username is required for registration');
+          setLoading(false);
           return;
         }
         
-        // Registration - include username in metadata
-        const result = await supabase.auth.signUp({ 
-          email, 
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
           password,
           options: {
             data: {
               username: username.trim(),
-              full_name: username.trim() // Use username as display name initially
+              full_name: username.trim()
             }
           }
         });
-        authError = result.error;
         
-        if (!authError) {
-          // Registration successful - user should be logged in immediately since email confirmation is disabled
+        if (signUpError) throw signUpError;
+        
+        if (data?.user) {
           console.log('Registration successful');
-        }
-      }      if (authError) {
-        console.error('Auth error details:', authError);
-        
-        // Provide more specific error messages
-        if (authError.message.includes('Invalid login credentials')) {
-          setError('Invalid email or password');
-        } else if (authError.message.includes('Email not confirmed')) {
-          setError('Please check your email and confirm your account');
-        } else if (authError.message.includes('Database error')) {
-          setError('Database error saving new user. Please ensure the database schema is set up correctly.');
-        } else {
-          setError(authError.message);
         }
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
       console.error('Auth error:', err);
+      setError(err.message || 'An error occurred during authentication');
     } finally {
       setLoading(false);
     }
