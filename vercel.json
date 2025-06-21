@@ -1,13 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "next build",
-  "devCommand": "next dev",
-  "installCommand": "npm install",
+  "buildCommand": "NEXT_PUBLIC_SUPABASE_URL=https://yipvctqgluwqwaashbat.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpcHZjdHFnbHV3cXdhYXNoYmF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4NjE1NjksImV4cCI6MjA2NDQzNzU2OX0.l3-_KNjgqlj0RkPuTcutxYtx837RLwDS0T0tbVOIIwM next build",
   "framework": "nextjs",
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://yipvctqgluwqwaashbat.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpcHZjdHFnbHV3cXdhYXNoYmF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4NjE1NjksImV4cCI6MjA2NDQzNzU2OX0.l3-_KNjgqlj0RkPuTcutxYtx837RLwDS0T0tbVOIIwM",
-    "DATABASE_URL": "postgresql://postgres:FNh9LH5O1ODmst7o@db.yipvctqgluwqwaashbat.supabase.co:5432/postgres?sslmode=require",
-    "NODE_ENV": "production"
+    "DATABASE_URL": "postgresql://postgres:FNh9LH5O1ODmst7o@db.yipvctqgluwqwaashbat.supabase.co:5432/postgres?sslmode=require"
   }
 }
