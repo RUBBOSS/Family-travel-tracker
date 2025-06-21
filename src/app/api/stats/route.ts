@@ -14,6 +14,12 @@ async function getUserFromRequest(request: NextRequest) {
     const token = authHeader.replace('Bearer ', '');
     
     if (!token) return null;
+
+    // Verify we have the required environment variables at runtime
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Missing required Supabase environment variables');
+      return null;
+    }
     
     // Use a try-catch specifically for getUser to handle AuthSessionMissingError
     try {
@@ -29,18 +35,13 @@ async function getUserFromRequest(request: NextRequest) {
         return null;
       }
       
-      return data.user;
-    } catch (authError: any) {
-      // Handle AuthSessionMissingError specifically
-      if (authError.name === 'AuthSessionMissingError' || authError.message?.includes('Auth session missing')) {
-        console.log('No active session found in token validation');
-        return null;
-      }
-      console.error('Token validation error:', authError);
+      return data?.user || null;
+    } catch (e) {
+      console.error('Error getting user:', e);
       return null;
     }
-  } catch (err) {
-    console.error('Error in getUserFromRequest:', err);
+  } catch (e) {
+    console.error('Error in getUserFromRequest:', e);
     return null;
   }
 }
