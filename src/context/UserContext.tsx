@@ -88,7 +88,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      return profile;
+      // The profiles table has no email column — carry it from the auth user
+      return { ...profile, email: authUser.email || undefined };
     } catch (err) {
       console.error('Error in fetchUserProfile:', err);
       return null;

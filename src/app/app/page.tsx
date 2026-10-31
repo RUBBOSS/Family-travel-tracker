@@ -160,9 +160,17 @@ export default function TrackerPage() {
     : 0;
   const shareUrl = currentUser ? `${typeof window !== 'undefined' ? window.location.origin : ''}/u/${currentUser.username}` : '/';
 
-  // Whop license gate — dormant unless WHOP_* env vars are configured.
+  // Whop license gate — active when WHOP_* env vars are configured.
+  // Emails in NEXT_PUBLIC_WHOP_BYPASS_EMAILS (the seller demo) skip it.
   useEffect(() => {
     if (!currentUser?.id) return;
+    const bypass = (process.env.NEXT_PUBLIC_WHOP_BYPASS_EMAILS ?? '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (currentUser.email && bypass.includes(currentUser.email.toLowerCase())) {
+      return;
+    }
     let cancelled = false;
     setLicenseChecking(true);
     setLicenseGate(null);
@@ -170,7 +178,7 @@ export default function TrackerPage() {
     (async () => {
       try {
         const check = await fetch('/api/license/validate');
-        const { enabled, checkoutUrl } = await check.json();
+        const { enabled, checkoutUrls } = await check.json();
         if (!enabled || cancelled) {
           return;
         }
@@ -186,7 +194,7 @@ export default function TrackerPage() {
           body: JSON.stringify({ licenseKey: storedKey }),
         }).then(r => r.json());
         if (!cancelled && !validation.valid) {
-          setLicenseGate({ checkoutUrl: checkoutUrl ?? null });
+          setLicenseGate({ checkoutUrl: checkoutUrls?.pro ?? checkoutUrls?.family ?? null });
         }
       } catch {
         // License service unreachable — fail open rather than lock users out.

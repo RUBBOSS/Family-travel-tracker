@@ -22,23 +22,18 @@ Pick one (both work):
 - Vercel → import repo → add env vars (below) → deploy.
 - Custom domain via Vercel → Domains.
 
-## 3. Whop activation (license gate)
-The gate code is already in the app and dormant. To activate:
-1. Create your product on Whop (whop.com/dashboard) with pricing variants.
-2. In Whop → Settings → API, generate a **server API key**.
-3. Set these env vars (Vercel + local `.env.local`):
-   ```
-   WHOP_API_KEY=whop_...
-   WHOP_PRODUCT_ID=prod_...
-   NEXT_PUBLIC_WHOP_CHECKOUT_FAMILY=https://whop.com/checkout/<family-plan>
-   NEXT_PUBLIC_WHOP_CHECKOUT_PRO=https://whop.com/checkout/<pro-plan>
-   NEXT_PUBLIC_WHOP_CHECKOUT_AGENCY=https://whop.com/checkout/<agency-plan>
-   ```
-4. Redeploy. New/unlicensed users now see the license gate at `/app`;
-   buyers paste the Whop license key from their purchase confirmation.
-5. **Verify against current docs** (docs.whop.com → license keys) before
-   launch — the validation endpoint lives in `src/lib/whop.ts`.
-6. Test the full loop with a 100%-off coupon before going live.
+## 3. Whop activation — ✅ ALREADY LIVE (done 2026-10-31)
+- Product: **Family Travel Tracker** (`prod_pX9s2f5LQAcdj`) → https://whop.com/family-travel-tracker
+- Plans: Family $29 (`plan_wFpzmzIAk893C`), Pro $9/mo (`plan_4LhNiPWZUrBCT`), Agency $49 (`plan_ee5Iu88nbRC0j`)
+- `.env.local` carries WHOP_API_KEY, WHOP_PRODUCT_ID and the three checkout URLs.
+- The license gate is ACTIVE: unlicensed users are gated at `/app`; the demo
+  account is bypassed via NEXT_PUBLIC_WHOP_BYPASS_EMAILS.
+- Validation uses the current API (retrieve membership by license key, check
+  status + product) — implemented in `src/lib/whop.ts`. Verified: fake keys
+  are rejected through the real Whop round-trip.
+- **Remaining before go-live:** (a) add the listing media/copy on the Whop
+  dashboard product page, (b) run one real purchase (or 100%-off coupon) to
+  see a genuine license key validate, (c) Vercel env vars when deploying.
 
 ## 4. Env vars (Vercel → Settings → Environment Variables)
 ```

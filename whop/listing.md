@@ -92,9 +92,16 @@ This is a complete, production-grade codebase — not a tutorial project:
 
 | Tier | Price | Contents |
 |---|---|---|
-| **Source license** | $49 one-time | Full code, 1 project, free updates |
-| **Agency** | $149 one-time | Source + unlimited client deployments + rebranding rights |
-| **Hosted Pro** | $9/mo | We host it for you (requires your Supabase Pro, see deploy-checklist) |
-| **Setup done-for-you** | $99 | We deploy + brand it for the buyer's Supabase |
+**LIVE product page:** https://whop.com/family-travel-tracker
+
+| Plan | Price | Whop checkout link |
+|---|---|---|
+| **Family** | $29 one-time | https://whop.com/checkout/plan_wFpzmzIAk893C |
+| **Pro** (hosted access) | $9/mo | https://whop.com/checkout/plan_4LhNiPWZUrBCT |
+| **Agency** (source + client deployments) | $49 one-time | https://whop.com/checkout/plan_ee5Iu88nbRC0j |
+
+> Checkout links are pre-wired into the app's /pricing page and license gate
+> via env vars. The source-code delivery (this zip / private repo) is manual
+> or via a private GitHub repo invite.
 
 > The hosted tiers require the license gate (already built — activate with WHOP_* env vars, see deploy-checklist.md).

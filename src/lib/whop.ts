@@ -1,25 +1,32 @@
 import 'server-only';
 
 /**
- * Whop license validation — staged integration.
+ * Whop license validation — LIVE.
  *
- * Dormant until WHOP_API_KEY + WHOP_PRODUCT_ID are set in the environment.
- * When they are absent, `isLicensingEnabled()` returns false and the app
- * behaves exactly as an unlicensed open product (current behavior).
+ * Product:  prod_pX9s2f5LQAcdj (whop.com/family-travel-tracker)
+ * Plans:    Family plan_wFpzmzIAk893C ($29 one-time)
+ *           Pro    plan_4LhNiPWZUrBCT ($9/mo)
+ *           Agency plan_ee5Iu88nbRC0j ($49 one-time)
  *
- * Endpoint reference (verify against current Whop docs on activation):
- *   POST https://api.whop.com/api/v2/memberships/validate_license
- *   Headers: Authorization: Bearer <WHOP_API_KEY>
- *   Body:    { license_key, product_id }
- *   200 -> { valid: true, membership: { status, expires_at, ... } }
- *   4xx -> invalid / unknown license
+ * Validation flow (current Whop API — the legacy validate_license route is
+ * gone): retrieve the membership BY LICENSE KEY, then require a status that
+ * grants access and a match on our product:
+ *   GET https://api.whop.com/api/v2/memberships/{license_key}
+ *   Authorization: Bearer WHOP_API_KEY
+ *   200 -> { status, product_id / product, ... }
+ *   404 -> unknown license
  */
+
+const WHOP_API_BASE = 'https://api.whop.com/api/v2';
+
+/** Membership statuses that grant app access. */
+const VALID_STATUSES = new Set(['active', 'completed', 'trialing']);
 
 export interface LicenseValidationResult {
   valid: boolean;
   status?: string;
   expiresAt?: string | null;
-  error?: string;
+  error?: 'missing_key' | 'invalid_key' | 'wrong_product' | 'inactive' | 'whop_error' | 'network_error';
 }
 
 export function isLicensingEnabled(): boolean {
@@ -55,36 +62,41 @@ export async function validateLicenseKey(licenseKey: string): Promise<LicenseVal
   }
 
   try {
-    const res = await fetch('https://api.whop.com/api/v2/memberships/validate_license', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ license_key: trimmed, product_id: productId }),
+    const res = await fetch(`${WHOP_API_BASE}/memberships/${encodeURIComponent(trimmed)}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
       signal: AbortSignal.timeout(10000),
     });
 
-    if (res.ok) {
-      const data = (await res.json()) as {
-        valid?: boolean;
-        membership?: { status?: string; expires_at?: string | null };
-      };
-      if (data.valid) {
-        return {
-          valid: true,
-          status: data.membership?.status,
-          expiresAt: data.membership?.expires_at ?? null,
-        };
-      }
+    if (res.status === 404) {
       return { valid: false, error: 'invalid_key' };
     }
 
-    if (res.status === 404 || res.status === 400) {
-      return { valid: false, error: 'invalid_key' };
+    if (!res.ok) {
+      return { valid: false, error: 'whop_error' };
     }
 
-    return { valid: false, error: `whop_error_${res.status}` };
+    const membership = (await res.json()) as {
+      status?: string;
+      expires_at?: string | null;
+      product_id?: string;
+      product?: { id?: string } | string;
+    };
+
+    const membershipProductId =
+      typeof membership.product === 'object' ? membership.product?.id : membership.product;
+    if (membership.product_id !== productId && membershipProductId !== productId) {
+      return { valid: false, error: 'wrong_product' };
+    }
+
+    if (!membership.status || !VALID_STATUSES.has(membership.status)) {
+      return { valid: false, status: membership.status, error: 'inactive' };
+    }
+
+    return {
+      valid: true,
+      status: membership.status,
+      expiresAt: membership.expires_at ?? null,
+    };
   } catch {
     return { valid: false, error: 'network_error' };
   }
