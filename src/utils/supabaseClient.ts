@@ -1,41 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://yipvctqgluwqwaashbat.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpcHZjdHFnbHV3cXdhYXNoYmF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4NjE1NjksImV4cCI6MjA2NDQzNzU2OX0.l3-_KNjgqlj0RkPuTcutxYtx837RLwDS0T0tbVOIIwM';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const createBrowserSupabaseClient = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || supabaseUrl;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || supabaseAnonKey;
-  
-  return createClient(url, key, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      flowType: 'pkce',
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      storageKey: 'family-travel-auth-token',
-      debug: process.env.NODE_ENV === 'development'
-    },
-    db: {
-      schema: 'public'
-    }
-  });
-};
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local'
+  );
+}
 
-const createServerSupabaseClient = () => {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false
-    },
-    db: {
-      schema: 'public'
-    }
-  });
-};
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'family-travel-auth-token',
+    debug: process.env.NODE_ENV === 'development'
+  },
+  db: {
+    schema: 'public'
+  }
+});
 
-export const supabase = typeof window === 'undefined' 
-  ? createServerSupabaseClient()
-  : createBrowserSupabaseClient();
+export { supabase };

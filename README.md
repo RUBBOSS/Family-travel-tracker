@@ -1,126 +1,92 @@
 # Family Travel Tracker
 
-Family Travel Tracker is a web application that allows families to keep track of countries they have visited. Users can add family members, each with their own unique color, and track which countries they've visited on a color-coded world map.
+Family Travel Tracker is a web application that lets families color in the world as they explore it. Each family member gets their own color; every visit lights up the shared world map — with dates, notes, bucket-list planning, and a public share page for the whole journey.
+
+![Stack](https://img.shields.io/badge/Next.js-15-black) ![React](https://img.shields.io/badge/React-18-blue) ![Supabase](https://img.shields.io/badge/Supabase-Postgres-green)
 
 ## Features
 
-- **Add Visited Countries:** Users can input the name of a country they have visited, and it will be highlighted on the world map.
-- **Family Member Profiles:** Multiple family members can be added, each with their own color to represent their visited countries.
-- **Map Visualization:** Visited countries are highlighted on a world map with the family member's chosen color.
-- **Error Handling:** The app handles cases where the country does not exist in the database or has already been added.
+- **Interactive world map** — complete 173-country SVG map; visited countries glow per family member, with staggered reveal animation and hover tooltips (flag + country).
+- **Family member profiles** — each person gets a color; view one member or everyone at once.
+- **Trip logging** — search any of 193 countries, add a date and a note, watch the map pulse and confetti fall. Milestones (every 25 countries) get a bigger celebration.
+- **Stats dashboard** — animated count-ups, "% of the world" progress ring, family leaderboard with animated bars, and per-continent breakdown.
+- **Bucket list** — star countries you dream about (dashed outline on the map), convert them to visits with one tap.
+- **Shareable public map** — every user gets `/u/<username>`: an animated, multi-colored public map + stats that requires no login.
+- **Landing page + live demo** — one-click demo login with pre-seeded family data.
 
 ## Technology Stack
 
-- **Frontend:** Next.js, React, TypeScript, Tailwind CSS
-- **Backend:** Next.js API Routes
-- **Database:** Supabase (PostgreSQL)
-- **State Management:** React Context API
-- **Data Visualization:** D3.js, SVG
-- **UI Components:** Custom components with Tailwind CSS
+- **Frontend:** Next.js 15 (App Router), React 18, TypeScript, Tailwind CSS, framer-motion
+- **Map:** d3-geo + topojson-client (regenerable SVG), flagcdn flags
+- **Backend:** Next.js API routes
+- **Database/Auth:** Supabase (PostgreSQL + RLS + Auth) — runs entirely on the public anon key; row security is enforced by database policies, no service-role key needed
 
-## Local Installation
+## Local Setup
 
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/RUBBOSS/family-travel-tracker.git
-   cd family-travel-tracker
-   ```
-
-2. Install dependencies:
+1. Clone and install:
 
    ```bash
    npm install
    ```
 
-3. Set up environment variables:
-   Create a `.env` file with the following:
+2. Create `.env.local`:
 
    ```
-   # Supabase Database
-   SUPABASE_HOST=your-supabase-host
-   SUPABASE_DB=postgres
-   SUPABASE_USER=postgres
-   SUPABASE_PASSWORD=your-password
-   SUPABASE_URL=your-supabase-url
-   SUPABASE_KEY=your-supabase-key
-   
-   # For deployment
-   PORT=3000
-   NODE_ENV=development
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    ```
-   
-4. Set up Supabase:
-   - Create a Supabase project
-   - Run the SQL in `supabase-setup.sql` in the Supabase SQL Editor
 
-5. Start the development server:
+3. Set up the database — run in the Supabase SQL Editor, in order:
+   - `supabase-unified.sql` (tables, RLS, seed countries, auth trigger)
+   - `supabase-migration-2.sql` (bucket list table + public map RPC)
+
+4. Start:
 
    ```bash
    npm run dev
    ```
 
-6. Open your browser and navigate to `http://localhost:3000`.
+5. Open [http://localhost:3000](http://localhost:3000).
 
-## Deployment
+### Demo account
 
-### Deploy to Vercel (Recommended for Next.js)
+When email confirmation is disabled in Supabase Auth settings, the landing page's **Try the live demo** button signs into `demo@traveltracker.demo` / `DemoTravel2026!`. Seed (or re-seed) its data with:
 
-1. Create a Vercel account at [vercel.com](https://vercel.com)
-2. Install Vercel CLI:
-   ```bash
-   npm i -g vercel
-   ```
-3. Deploy:
-   ```bash
-   vercel
-   ```
-4. Add environment variables in the Vercel dashboard
+```bash
+node scripts/seed-demo.mjs
+```
 
-### Deploy to Netlify
+### Regenerate the world map
 
-1. Create a Netlify account at [netlify.com](https://netlify.com)
-2. Connect your GitHub repository
-3. Set the following:
-   - Build Command: `npm run build`
-   - Publish Directory: `.next`
-4. Add environment variables from your `.env` file
-5. Deploy
+`public/world.svg` is generated from world-atlas TopoJSON (the original shipped map was missing ~27 major countries). To rebuild it:
 
-## Usage
+```bash
+node scripts/generate-world-svg.mjs
+```
 
-1. **Add a Family Member:**
-   - Click "Add Family Member" and fill out the form with the person's name and preferred color.
-   
-2. **Track Visited Countries:**
-   - Select a family member and enter the name of a country they have visited.
-   - The country will be highlighted on the world map with their color.
+## Scripts
 
-3. **View Total Countries:**
-   - The total number of countries visited by the selected family member is displayed at the bottom of the page.
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Development server |
+| `npm run build` / `npm start` | Production build / serve |
+| `npm run type-check` | TypeScript check |
+| `node scripts/seed-demo.mjs` | Seed the demo account |
+| `node scripts/generate-world-svg.mjs` | Regenerate `public/world.svg` |
 
 ## Database Structure
 
-- **Users Table:**
-  - `id`: Integer, Primary Key
-  - `name`: Text, Name of the family member
-  - `color`: Text, Color associated with the family member
+- **countries** — 193 seeded countries (code, name, flag, population, capital, region)
+- **user_profiles** — profile per auth user (username, full name, avatar color)
+- **family_members** — per-user family members (name, avatar color)
+- **visited_countries** — visits (user, country, optional family member, date, notes)
+- **bucket_list** — wishlist entries (user, country, optional family member, notes)
+- RLS on all tables: users manage only their own rows; `countries` is publicly readable; `get_public_map(username)` RPC exposes only safe public data for share pages.
 
-- **Countries Table:**
-  - `id`: Integer, Primary Key
-  - `country_code`: Text, Two-letter country code
-  - `country_name`: Text, Name of the country
+## Deployment
 
-- **Visited Countries Table:**
-  - `id`: Integer, Primary Key
-  - `country_id`: Integer, Foreign Key referencing the `countries` table
-  - `user_id`: Integer, Foreign Key referencing the `users` table
+Deploy to Vercel with the two `NEXT_PUBLIC_*` environment variables set. No server-side secrets required.
 
 ## Contributing
 
-If you'd like to contribute to this project, please fork the repository and submit a pull request. All contributions are welcome!
-
-
-## Acknowledgments
-
-This project was created as part of a coding challenge to demonstrate basic full-stack web development skills using Node.js, Express, and PostgreSQL.
+Fork the repository and submit a pull request — all contributions are welcome!

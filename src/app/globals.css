@@ -4,107 +4,215 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 173 80% 40%; /* teal */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 173 80% 40%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 224 71% 3%; /* slate-950-ish */
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 7%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 7%;
     --popover-foreground: 210 40% 98%;
-    --primary: 173 70% 70%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 172 66% 51%; /* aurora teal #2dd4bf */
+    --primary-foreground: 222 47% 6%;
+    --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 262 83% 74%; /* aurora violet */
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 173 70% 40%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 172 66% 51%;
+    --radius: 0.75rem;
   }
-}
 
-@layer base {  * {
+  * {
     @apply border-[hsl(var(--border))];
   }
+
+  html {
+    color-scheme: dark;
+  }
+
   body {
-    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-slate-950 text-slate-100 antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
+  }
+
+  /* --- Browser chrome, themed (no defaults) --- */
+  ::selection {
+    background: rgba(45, 212, 191, 0.35);
+    color: #f0fdfa;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #020617;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 8px;
+    border: 2px solid #020617;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #334155;
+  }
+
+  input,
+  textarea {
+    caret-color: #2dd4bf;
+  }
+
+  /* Focus: visible ring instead of removed outlines */
+  :focus-visible {
+    outline: 2px solid #2dd4bf;
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
 @layer components {
+  /* Glass surface — used where content actually scrolls beneath (header, dialogs) */
+  .glass-panel {
+    @apply rounded-2xl border border-white/10 bg-slate-900/70 backdrop-blur-md;
+  }
+
+  .surface-card {
+    @apply rounded-2xl border border-white/10 bg-slate-900/60;
+  }
+
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-teal-400 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_4px_20px_-4px_rgba(45,212,191,0.5)] transition-colors hover:bg-teal-300 disabled:pointer-events-none disabled:opacity-50;
   }
-  
+
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground ring-offset-background transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:pointer-events-none disabled:opacity-50;
   }
-  
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-50;
+  }
+
   .input-primary {
-    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply h-10 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 transition-colors focus:border-teal-400/60 disabled:cursor-not-allowed disabled:opacity-50;
   }
-  
-  .card {
-    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
-  }
-  
-  .country-visited {
-    @apply fill-primary hover:fill-primary/90 transition-colors duration-300 cursor-pointer;
+
+  .section-heading {
+    @apply font-display text-xl font-semibold tracking-tight text-white;
   }
 }
 
-/* Enhanced SVG countries hover and transition effects */
+@layer utilities {
+  /* --- Aurora atmosphere --- */
+  .aurora-layer {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    will-change: transform, opacity;
+    pointer-events: none;
+  }
+
+  .animate-aurora-drift {
+    animation: aurora-drift 26s ease-in-out infinite alternate;
+  }
+  .animate-aurora-drift-slow {
+    animation: aurora-drift 38s ease-in-out infinite alternate-reverse;
+  }
+
+  .animate-float {
+    animation: float 7s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(100deg, rgba(255,255,255,0.04) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.04) 60%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s linear infinite;
+  }
+
+  .text-glow-teal {
+    text-shadow: 0 0 24px rgba(45, 212, 191, 0.45);
+  }
+
+  .map-country-glow {
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+
+  /* Hover lift for map countries (visited or bucket-marked) */
+  svg path[data-visited="true"]:hover,
+  svg path[data-visited="bucket"]:hover {
+    filter: brightness(1.35);
+  }
+}
+
+@keyframes country-pulse {
+  0%, 100% {
+    filter: none;
+  }
+  50% {
+    filter: drop-shadow(0 0 10px currentColor) brightness(1.5);
+  }
+}
+
+.map-country-pulse {
+  animation: country-pulse 0.8s ease-in-out 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-country-pulse {
+    animation: none;
+  }
+}
+
+@keyframes aurora-drift {
+  0% {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate3d(4%, 6%, 0) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(8%, -6%, 0) scale(1.05);
+    opacity: 0.75;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-aurora-drift,
+  .animate-aurora-drift-slow,
+  .animate-float,
+  .animate-shimmer {
+    animation: none;
+  }
+}
+
+/* --- World map SVG behavior --- */
 svg path {
-  transition: fill 0.2s ease, filter 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
+  transition: fill 0.35s ease, filter 0.35s ease, stroke 0.2s ease, stroke-width 0.2s ease;
   cursor: pointer;
   pointer-events: visiblePainted;
   vector-effect: non-scaling-stroke;
 }
 
-/* Prevent rapid event firing on complex SVG shapes */
 svg {
   pointer-events: bounding-box;
-}
-
-svg path:hover {
-  pointer-events: all;
-}
-
-/* Remove default focus outlines that might create white borders */
-.cursor-pointer:focus {
-  outline: none !important;
-}
-
-/* Ensure no default button or clickable element styling */
-button:focus,
-div[role="button"]:focus,
-[tabindex]:focus {
-  outline: none !important;
 }

@@ -1,60 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/utils/supabaseServerClient';
-
-// Helper to get user from Supabase JWT
-async function getUserFromRequest(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Invalid or missing auth header');
-      return null;
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    
-    if (!token) return null;
-    
-    // Use a try-catch specifically for getUser to handle AuthSessionMissingError
-    try {
-      const { data, error } = await supabaseServer.auth.getUser(token);
-      
-      if (error) {
-        // Handle AuthSessionMissingError gracefully
-        if (error.name === 'AuthSessionMissingError' || error.message?.includes('Auth session missing')) {
-          console.log('No active session found');
-          return null;
-        }
-        console.error('Auth error:', error);
-        return null;
-      }
-      
-      return data.user;
-    } catch (authError: any) {
-      // Handle AuthSessionMissingError specifically
-      if (authError.name === 'AuthSessionMissingError' || authError.message?.includes('Auth session missing')) {
-        console.log('No active session found in token validation');
-        return null;
-      }
-      console.error('Token validation error:', authError);
-      return null;
-    }
-  } catch (err) {
-    console.error('Error in getUserFromRequest:', err);
-    return null;
-  }
-}
+import { getUserFromRequest, unauthorized } from '@/utils/apiAuth';
 
 export async function GET(request: NextRequest) {
+  const auth = await getUserFromRequest(request);
+  if (!auth) return unauthorized();
+  const { supabase } = auth;
+
   try {
-    const user = await getUserFromRequest(request);
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }    const { data: familyMembers, error } = await supabaseServer
+    const { data: familyMembers, error } = await supabase
       .from('family_members')
       .select('*')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -80,24 +35,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    console.log('Family members POST API called');
-    const user = await getUserFromRequest(request);
-    
-    if (!user) {
-      console.log('POST: No user found, returning unauthorized');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const auth = await getUserFromRequest(request);
+  if (!auth) return unauthorized();
+  const { user, supabase } = auth;
 
-    console.log('POST: User authenticated:', user.id);
+  try {
     const { name, avatarColor } = await request.json();
-    console.log('POST: Request data:', { name, avatarColor });
 
     if (!name || !name.trim()) {
-      console.log('POST: Name validation failed');
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-    }    console.log('POST: Inserting family member into database');
-    const { data: familyMember, error } = await supabaseServer
+    }
+
+    const { data: familyMember, error } = await supabase
       .from('family_members')
       .insert({
         user_id: user.id,
@@ -107,12 +56,11 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    console.log('POST: Database operation result:', { familyMember, error });
-
     if (error) {
       console.error('Error creating family member:', error);
       return NextResponse.json({ error: 'Failed to create family member' }, { status: 500 });
-    }    // Transform snake_case to camelCase to match our TypeScript types
+    }
+
     const transformedFamilyMember = {
       id: familyMember.id,
       userId: familyMember.user_id,
@@ -122,7 +70,6 @@ export async function POST(request: NextRequest) {
       updatedAt: familyMember.updated_at
     };
 
-    console.log('POST: Returning success response:', transformedFamilyMember);
     return NextResponse.json({ familyMember: transformedFamilyMember });
   } catch (error) {
     console.error('Error in family members POST:', error);
@@ -131,13 +78,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  try {
-    const user = await getUserFromRequest(request);
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const auth = await getUserFromRequest(request);
+  if (!auth) return unauthorized();
+  const { supabase } = auth;
 
+  try {
     const { searchParams } = new URL(request.url);
     const familyMemberId = searchParams.get('id');
 
@@ -145,24 +90,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Family member ID is required' }, { status: 400 });
     }
 
-    // First verify the family member belongs to the current user
-    const { data: familyMember, error: fetchError } = await supabaseServer
-      .from('family_members')
-      .select('*')
-      .eq('id', familyMemberId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (fetchError || !familyMember) {
-      return NextResponse.json({ error: 'Family member not found' }, { status: 404 });
-    }
-
-    // Delete the family member
-    const { error } = await supabaseServer
+    // RLS scopes this to the caller's rows; the explicit eq() keeps semantics clear
+    const { error } = await supabase
       .from('family_members')
       .delete()
-      .eq('id', familyMemberId)
-      .eq('user_id', user.id);
+      .eq('id', familyMemberId);
 
     if (error) {
       console.error('Error deleting family member:', error);

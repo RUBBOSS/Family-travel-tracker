@@ -1,133 +1,120 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useUserContext } from '@/context/UserContext';
-import { useVisitedCountries } from '@/hooks/useVisitedCountries';
-import { useCountries } from '@/hooks/useCountries';
-import { FamilyMemberWithMeta } from '@/hooks/useFamilyMembers';
-import { motion } from 'framer-motion';
-import { MapPin, Loader2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-// Dynamically import the SVG world map to avoid SSR issues
-const DynamicWorldMap = dynamic(() => import('@/components/WorldMap/WorldMapSvg'), {
+// Client-only: the SVG is fetched and injected in the browser
+const WorldMapSvg = dynamic(() => import('@/components/WorldMap/WorldMapSvg'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-96 flex items-center justify-center">
-      <Loader2 className="animate-spin text-slate-400" size={48} />
+    <div className="flex aspect-[2000/880] w-full items-center justify-center rounded-xl bg-white/[0.02]">
+      <Loader2 className="h-8 w-8 animate-spin text-teal-300/60" />
     </div>
   ),
 });
 
-interface WorldMapProps {
-  selectedFamilyMemberId?: number | null;
-  familyMembers?: FamilyMemberWithMeta[];
-  visitedCountryCodes?: string[];
-  isLoading?: boolean;
+export interface MapVisit {
+  countryCode: string;
+  color: string;
+  memberName?: string | null;
 }
 
-export default function WorldMap({ selectedFamilyMemberId, familyMembers = [], visitedCountryCodes = [], isLoading = false }: WorldMapProps) {
-  const { currentUser } = useUserContext();
-  const { totalCount: totalCountries } = useCountries();  const [isMapLoaded, setIsMapLoaded] = useState(false);
+interface WorldMapProps {
+  visits: MapVisit[];
+  bucketCodes?: string[];
+  highlightCountryCode?: string | null;
+  isLoading?: boolean;
+  title?: string;
+}
 
-  const handleMapLoad = useCallback(() => {
-    setIsMapLoaded(true);
-  }, []);
+const TOTAL_COUNTRIES = 193;
 
-  const visitedPercentage = useMemo(() => {
-    if (totalCountries === 0) return '0.0';
-    return ((visitedCountryCodes.length / totalCountries) * 100).toFixed(1);
-  }, [visitedCountryCodes.length, totalCountries]);
+export default function WorldMap({
+  visits,
+  bucketCodes,
+  highlightCountryCode,
+  isLoading = false,
+  title,
+}: WorldMapProps) {
+  const countryColors = useMemo(() => {
+    const colors: Record<string, string> = {};
+    for (const visit of visits) {
+      if (visit.countryCode && visit.countryCode !== 'XX') {
+        colors[visit.countryCode] = visit.color;
+      }
+    }
+    return colors;
+  }, [visits]);
+
+  const uniqueCount = Object.keys(countryColors).length;
+  const percent = ((uniqueCount / TOTAL_COUNTRIES) * 100).toFixed(1);
+
+  const legend = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const visit of visits) {
+      if (!seen.has(visit.color)) {
+        seen.set(visit.color, visit.memberName || 'Visited');
+      }
+    }
+    return Array.from(seen.entries()).map(([color, name]) => ({ color, name }));
+  }, [visits]);
 
   return (
-    <div className="relative">
-      {isLoading && (
-        <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center z-10 rounded-lg">
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          >
-            <Loader2 size={48} className="text-blue-500" />
-          </motion.div>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-display text-sm font-semibold text-white">
+            {title ?? 'Family world map'}
+          </p>
+          <p className="text-sm text-slate-400">
+            <span className="font-semibold text-teal-300 tabular-nums">{uniqueCount}</span>{' '}
+            {uniqueCount === 1 ? 'country' : 'countries'} visited
+            <span className="text-slate-500"> · {percent}% of the world</span>
+          </p>
         </div>
-      )}
 
-      <div className="bg-slate-900/30 backdrop-blur-sm rounded-lg p-4 mb-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">          <div>            <h3 className="text-lg font-medium text-white">
-              {(() => {
-                if (selectedFamilyMemberId) {
-                  const selectedMember = familyMembers.find(m => m.id === selectedFamilyMemberId);
-                  return selectedMember ? (
-                    <>
-                      <span className="font-semibold">{selectedMember.name}</span>&apos;s world map
-                    </>
-                  ) : (
-                    'World map'
-                  );
-                } else if (currentUser) {
-                  return (
-                    <>
-                      <span className="font-semibold">{currentUser.username}</span>&apos;s world map
-                    </>
-                  );
-                } else {
-                  return 'World map';
-                }
-              })()}
-            </h3>            <p className="text-slate-400 text-sm">
-              {visitedCountryCodes.length} countries visited ({visitedPercentage}% of the world)
-            </p>
-          </div>          <div className="flex items-center text-sm">
-            <span className="flex items-center mr-4">
-              <div className="w-4 h-4 rounded bg-slate-700 mr-2"></div>
-              <span className="text-slate-400">Not visited</span>
+        {/* Legend */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
+          {legend.map(({ color, name }) => (
+            <span key={color} className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
+              {name}
             </span>
-            <span className="flex items-center">
-              <div 
-                className="w-4 h-4 rounded mr-2"
-                style={{ backgroundColor: (() => {
-                  if (selectedFamilyMemberId) {
-                    const selectedMember = familyMembers.find(m => m.id === selectedFamilyMemberId);
-                    return selectedMember?.avatarColor || '#3b82f6';
-                  }
-                  return currentUser?.avatar_color || '#3b82f6';
-                })() }}
-              ></div>
-              <span className="text-slate-400">Visited</span>
+          ))}
+          {bucketCodes && bucketCodes.length > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="h-2.5 w-2.5 rounded-sm border border-dashed"
+                style={{ borderColor: '#fbbf24', backgroundColor: '#1e293b' }}
+              />
+              Bucket list
             </span>
-          </div>
+          )}
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-slate-600" />
+            Not visited yet
+          </span>
         </div>
       </div>
-        <div className="relative w-full overflow-auto rounded-lg border border-slate-700">
-        <div className="min-w-[900px]">        <DynamicWorldMap
-          visitedCountries={visitedCountryCodes}
-          userColor={(() => {
-            if (selectedFamilyMemberId) {
-              const selectedMember = familyMembers.find(m => m.id === selectedFamilyMemberId);
-              return selectedMember?.avatarColor || '#3b82f6';
-            }
-            return currentUser?.avatar_color || '#3b82f6';
-          })()}
-          onLoad={handleMapLoad}
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isLoading ? 0.5 : 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <WorldMapSvg
+          countryColors={countryColors}
+          bucketCodes={bucketCodes}
+          highlightCode={highlightCountryCode}
         />
-        </div>
-      </div>
-      
-      {!isLoading && visitedCountryCodes.length === 0 && isMapLoaded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">          <MapPin size={48} className="text-slate-600 mb-3" />          <p className="text-slate-400 text-center max-w-xs">
-            {(() => {
-              if (selectedFamilyMemberId) {
-                const selectedMember = familyMembers.find(m => m.id === selectedFamilyMemberId);
-                return selectedMember ? 
-                  `${selectedMember.name} hasn't visited any countries yet. Add some countries to see them on the map.` :
-                  `Select a family member to see their visited countries.`;
-              } else if (currentUser) {
-                return `${currentUser.username} hasn't visited any countries yet. Add some countries to see them on the map.`;
-              } else {
-                return `Select a family member to see their visited countries.`;
-              }
-            })()}
+      </motion.div>
+
+      {uniqueCount === 0 && !isLoading && (!bucketCodes || bucketCodes.length === 0) && (
+        <div className="-mt-72 flex justify-center">
+          <p className="rounded-full border border-white/10 bg-slate-900/80 px-4 py-2 text-sm text-slate-300 backdrop-blur-sm">
+            No countries marked yet — add one above and watch it glow.
           </p>
         </div>
       )}

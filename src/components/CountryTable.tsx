@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Calendar, Trash2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowDown, ArrowUp, Calendar, MapPin, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 
 interface VisitedCountry {
@@ -18,6 +19,33 @@ interface CountryTableProps {
   onRemoveCountry?: (countryId: string) => void;
 }
 
+function SortHeader({
+  label,
+  field,
+  sortBy,
+  sortOrder,
+  onSort,
+  className = '',
+}: {
+  label: string;
+  field: 'name' | 'date';
+  sortBy: 'name' | 'date';
+  sortOrder: 'asc' | 'desc';
+  onSort: (field: 'name' | 'date') => void;
+  className?: string;
+}) {
+  const active = sortBy === field;
+  const Arrow = sortOrder === 'asc' ? ArrowUp : ArrowDown;
+  return (
+    <th className={`px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider ${active ? 'text-teal-300' : 'text-slate-400'} ${className}`}>
+      <button onClick={() => onSort(field)} className="inline-flex items-center gap-1 transition-colors hover:text-white">
+        {label}
+        {active && <Arrow className="h-3 w-3" aria-hidden />}
+      </button>
+    </th>
+  );
+}
+
 export default function CountryTable({
   countries = [],
   onRemoveCountry,
@@ -25,24 +53,10 @@ export default function CountryTable({
   const [sortBy, setSortBy] = useState<'name' | 'date'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const displayCountries = countries;
-
-  const sortedCountries = [...displayCountries].sort((a, b) => {
-    let aValue: string, bValue: string;
-
-    if (sortBy === 'name') {
-      aValue = a.countryName;
-      bValue = b.countryName;
-    } else {
-      aValue = a.visitDate;
-      bValue = b.visitDate;
-    }
-
-    if (sortOrder === 'asc') {
-      return aValue.localeCompare(bValue);
-    } else {
-      return bValue.localeCompare(aValue);
-    }
+  const sortedCountries = [...countries].sort((a, b) => {
+    const aValue = sortBy === 'name' ? a.countryName : a.visitDate;
+    const bValue = sortBy === 'name' ? b.countryName : b.visitDate;
+    return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
   });
 
   const handleSort = (field: 'name' | 'date') => {
@@ -50,9 +64,10 @@ export default function CountryTable({
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(field);
-      setSortOrder('asc');
+      setSortOrder('desc');
     }
   };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -61,114 +76,93 @@ export default function CountryTable({
       day: 'numeric',
     });
   };
+
+  if (countries.length === 0) {
+    return (
+      <div className="flex items-center gap-4 rounded-2xl border border-dashed border-white/15 px-5 py-6">
+        <MapPin className="h-8 w-8 text-slate-500" />
+        <div>
+          <p className="text-sm font-medium text-slate-300">Nothing logged yet</p>
+          <p className="text-sm text-slate-500">Add your first country above and watch the map light up.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-      <div className="mb-6 flex items-center justify-between">
-        {' '}
-        <h2 className="flex items-center gap-2 text-xl font-semibold text-white">
-          <MapPin className="h-5 w-5" />
-          Visited Countries
-        </h2>
-        <div className="text-sm text-slate-400">
-          {displayCountries.length} countries visited
-        </div>
-      </div>{' '}
-      {displayCountries.length === 0 ? (
-        <div className="py-8 text-center">
-          <MapPin className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-          <p className="text-slate-400">No countries visited yet</p>
-          <p className="mt-1 text-sm text-slate-500">
-            Start exploring the world!
-          </p>
-        </div>
-      ) : (        <div className="overflow-x-auto">
-          <table className="w-full table-fixed sm:table-auto">
-            <thead>
-              <tr className="border-b border-slate-700">
-                <th
-                  className="cursor-pointer px-2 sm:px-4 py-3 text-left font-medium text-slate-300 transition-colors hover:text-white w-[45%] sm:w-auto"
-                  onClick={() => handleSort('name')}
-                >
-                  Country
-                  {sortBy === 'name' && (
-                    <span className="ml-1">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </th>
-                <th
-                  className="cursor-pointer px-2 sm:px-4 py-3 text-left font-medium text-slate-300 transition-colors hover:text-white w-[40%] sm:w-auto"
-                  onClick={() => handleSort('date')}
-                >
-                  <span className="hidden sm:inline">Visit Date</span>
-                  <span className="sm:hidden">Date</span>
-                  {sortBy === 'date' && (
-                    <span className="ml-1">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </th>
-                <th className="px-2 sm:px-4 py-3 text-left font-medium text-slate-300 hidden sm:table-cell">
-                  Notes
-                </th>
-                <th className="px-2 sm:px-4 py-3 text-right font-medium text-slate-300 w-[15%] sm:w-auto">
-                  <span className="sr-only">Actions</span>                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedCountries.map((country) => (
-                <tr
-                  key={country.id}
-                  className="border-b border-slate-700/50 transition-colors hover:bg-slate-700/30"
-                >
-                  <td className="px-2 sm:px-4 py-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {country.flagUrl ? (
-                        <Image
-                          src={country.flagUrl}
-                          alt={`${country.countryName} flag`}
-                          width={24}
-                          height={16}
-                          className="h-4 w-6 rounded-sm object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="flex h-4 w-6 items-center justify-center rounded-sm bg-slate-600 text-xs text-white flex-shrink-0">
-                          {country.countryCode}
-                        </div>
-                      )}
-                      <span className="font-medium text-white truncate text-sm sm:text-base">
-                        {country.countryName}
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[480px]">
+        <thead>
+          <tr className="border-b border-white/10">
+            <SortHeader label="Country" field="name" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} className="w-[42%]" />
+            <SortHeader label="Visited" field="date" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} />
+            <th className="hidden px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-400 sm:table-cell">
+              Notes
+            </th>
+            <th className="px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-slate-400">
+              <span className="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <AnimatePresence initial={false}>
+          <tbody>
+            {sortedCountries.map((country) => (
+              <motion.tr
+                key={country.id}
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, x: 24, transition: { duration: 0.15 } }}
+                transition={{ duration: 0.25 }}
+                className="group border-b border-white/5 transition-colors last:border-0 hover:bg-white/[0.04]"
+              >
+                <td className="px-3 py-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {country.flagUrl ? (
+                      <Image
+                        src={country.flagUrl}
+                        alt={`${country.countryName} flag`}
+                        width={24}
+                        height={16}
+                        className="h-4 w-6 flex-shrink-0 rounded-sm object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-4 w-6 flex-shrink-0 items-center justify-center rounded-sm bg-slate-700 text-[8px] font-bold text-slate-300">
+                        {country.countryCode}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-2 sm:px-4 py-3">
-                    <div className="flex items-center gap-1 sm:gap-2 text-slate-300 min-w-0">
-                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm truncate leading-tight">
-                        {formatDate(country.visitDate)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-2 sm:px-4 py-3 hidden sm:table-cell">
-                    <span className="text-slate-400">
-                      {country.notes || '-'}
+                    )}
+                    <span className="truncate text-sm font-medium text-white">
+                      {country.countryName}
                     </span>
-                  </td>
-                  <td className="px-2 sm:px-4 py-3 text-right">
-                    <button
-                      onClick={() => onRemoveCountry?.(country.id)}
-                      className="rounded p-1 text-red-400 transition-colors hover:bg-red-400/10 hover:text-red-300"
-                      title="Remove country"
-                    >
-                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  </div>
+                </td>
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-2 text-slate-300">
+                    <Calendar className="h-3.5 w-3.5 flex-shrink-0 text-slate-500" />
+                    <span className="whitespace-nowrap text-sm tabular-nums">
+                      {formatDate(country.visitDate)}
+                    </span>
+                  </div>
+                </td>
+                <td className="hidden max-w-[240px] px-3 py-3 sm:table-cell">
+                  <span className="block truncate text-sm text-slate-400" title={country.notes}>
+                    {country.notes || '—'}
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-right">
+                  <button
+                    onClick={() => onRemoveCountry?.(country.id)}
+                    className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-500/10 hover:text-red-300 focus-visible:text-red-300"
+                    aria-label={`Remove ${country.countryName}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </td>
+              </motion.tr>
+            ))}
+          </tbody>
+        </AnimatePresence>
+      </table>
     </div>
   );
 }
