@@ -174,6 +174,32 @@ export const ru: Dictionary = {
   'toast.bucketRemoved': 'Удалено из списка желаний',
   'toast.sessionExpired': 'Сессия истекла — войдите заново.',
 
+  // Pricing
+  'pricing.title': 'Простые тарифы для каждого путешествия',
+  'pricing.subtitle': 'Начните бесплатно в демо. Улучшайте тариф, когда семья заболеет путешествиями.',
+  'pricing.familyName': 'Семейный',
+  'pricing.familyPrice': 'разовый платёж',
+  'pricing.familyDesc': 'Всё, что нужно семье для карты её путешествий.',
+  'pricing.proName': 'Pro',
+  'pricing.proPrice': 'в месяц',
+  'pricing.proDesc': 'Для серьёзных семей-путешественников: приоритетная поддержка и расширенная статистика.',
+  'pricing.agencyName': 'Агентство',
+  'pricing.agencyPrice': 'в месяц',
+  'pricing.agencyDesc': 'Трекер под вашим брендом для туристических клиентов. Ваш бренд — наш движок.',
+  'pricing.cta': 'Купить на Whop',
+  'pricing.ctaSoon': 'Скоро',
+  'pricing.feature1': 'Неограниченные члены семьи и страны',
+  'pricing.feature2': 'Интерактивная карта мира с цветами для каждого',
+  'pricing.feature3': 'Список желаний и заметки о поездках',
+  'pricing.feature4': 'Публичная страница-карта для шаринга',
+  'pricing.feature5': 'Английский, русский и армянский',
+  'pricing.featurePro1': 'Всё из тарифа «Семейный»',
+  'pricing.featurePro2': 'Расширенная статистика и разбивка по континентам',
+  'pricing.featurePro3': 'Приоритетная поддержка',
+  'pricing.featureAgency1': 'Всё из тарифа Pro',
+  'pricing.featureAgency2': 'White-label: ваш логотип и цвета',
+  'pricing.featureAgency3': 'Лицензия на исходный код для развёртывания клиентам',
+
   // Language switcher
   'lang.aria': 'Сменить язык',
 } as const;

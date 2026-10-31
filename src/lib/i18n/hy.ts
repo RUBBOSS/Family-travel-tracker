@@ -174,6 +174,32 @@ export const hy: Dictionary = {
   'toast.bucketRemoved': 'Հեռացվեց երազանքների ցանկից',
   'toast.sessionExpired': 'Սեսսիան ավարտվեց — մուտք գործեք նորից։',
 
+  // Pricing
+  'pricing.title': 'Պարզ պլաններ՝ ամեն արշավի համար',
+  'pricing.subtitle': 'Սկսեք անվճար դեմոյով։ Բարելավեք պլանը, երբ ընտանիքը վարակվի ճամփորդությամբ։',
+  'pricing.familyName': 'Ընտանեկան',
+  'pricing.familyPrice': 'միանվագ',
+  'pricing.familyDesc': 'Ամեն ինչ, ինչ ընտանիքին պետք է իր ճամփորդությունների քարտեզի համար։',
+  'pricing.proName': 'Pro',
+  'pricing.proPrice': 'ամսական',
+  'pricing.proDesc': 'Լուրջ ճամփորդող ընտանիքների համար՝ առաջնահերթ աջակցություն և ընդլայնված վիճակագրություն։',
+  'pricing.agencyName': 'Գործակալություն',
+  'pricing.agencyPrice': 'ամսական',
+  'pricing.agencyDesc': 'Տվիչը՝ ձեր բրենդով ճամփորդական հաճախորդների համար։ Ձեր բրենդը՝ մեր շարժիչը։',
+  'pricing.cta': 'Գնել Whop-ում',
+  'pricing.ctaSoon': 'Շուտով',
+  'pricing.feature1': 'Անսահմանափակ անդամներ և երկրներ',
+  'pricing.feature2': 'Ինտերակտիվ աշխարհի քարտեզ՝ ամեն անդամի գույնով',
+  'pricing.feature3': 'Երազանքների ցանկ և ուղևորությունների նշումներ',
+  'pricing.feature4': 'Հրապարակային քարտեզ-էջ՝ կիսելու համար',
+  'pricing.feature5': 'Հայերեն, ռուսերեն և անգլերեն',
+  'pricing.featurePro1': 'Ամեն ինչ «Ընտանեկան»-ից',
+  'pricing.featurePro2': 'Ընդլայնված վիճակագրություն և մայրցամաքների փչացում',
+  'pricing.featurePro3': 'Առաջնահերթ աջակցություն',
+  'pricing.featureAgency1': 'Ամեն ինչ Pro-ից',
+  'pricing.featureAgency2': 'White-label՝ ձեր լոգոն ու գույները',
+  'pricing.featureAgency3': 'Ելակետային կոդի արտոնագիր՝ հաճախորդների համար տեղակայելու',
+
   // Language switcher
   'lang.aria': 'Փոխել լեզուն',
 } as const;

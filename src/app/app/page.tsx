@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import Confetti from 'react-confetti';
@@ -14,6 +14,7 @@ import CountryTable from '@/components/CountryTable';
 import BucketListPanel from '@/components/BucketListPanel';
 import AddFamilyMemberDialog from '@/components/AddFamilyMemberDialog';
 import AuthForm from '@/components/AuthForm';
+import LicenseGate from '@/components/LicenseGate';
 import { AuroraBackground } from '@/components/AuroraBackground';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/context/LanguageContext';
@@ -31,6 +32,8 @@ export default function TrackerPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [scope, setScope] = useState<FamilyScope>('all');
   const [highlightCode, setHighlightCode] = useState<string | null>(null);
+  const [licenseGate, setLicenseGate] = useState<{ checkoutUrl: string | null } | null>(null);
+  const [licenseChecking, setLicenseChecking] = useState(false);
   const [celebration, setCelebration] = useState<{ active: boolean; long: boolean }>({ active: false, long: false });
   const celebrationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { width, height } = useWindowSize();
@@ -157,9 +160,52 @@ export default function TrackerPage() {
     : 0;
   const shareUrl = currentUser ? `${typeof window !== 'undefined' ? window.location.origin : ''}/u/${currentUser.username}` : '/';
 
-  if (isLoading) return null;
+  // Whop license gate — dormant unless WHOP_* env vars are configured.
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    let cancelled = false;
+    setLicenseChecking(true);
+    setLicenseGate(null);
+
+    (async () => {
+      try {
+        const check = await fetch('/api/license/validate');
+        const { enabled, checkoutUrl } = await check.json();
+        if (!enabled || cancelled) {
+          return;
+        }
+        let storedKey = '';
+        try {
+          storedKey = window.localStorage.getItem('ftt-license-key') ?? '';
+        } catch {
+          // storage unavailable
+        }
+        const validation = await fetch('/api/license/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ licenseKey: storedKey }),
+        }).then(r => r.json());
+        if (!cancelled && !validation.valid) {
+          setLicenseGate({ checkoutUrl: checkoutUrl ?? null });
+        }
+      } catch {
+        // License service unreachable — fail open rather than lock users out.
+      } finally {
+        if (!cancelled) setLicenseChecking(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id]);
+
+  if (isLoading || licenseChecking) return null;
   if (!currentUser) {
     return <AuthForm />;
+  }
+  if (licenseGate) {
+    return <LicenseGate checkoutUrl={licenseGate.checkoutUrl} />;
   }
 
   return (

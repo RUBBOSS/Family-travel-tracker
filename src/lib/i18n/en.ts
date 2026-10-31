@@ -173,6 +173,32 @@ export const en = {
   'toast.bucketRemoved': 'Removed from bucket list',
   'toast.sessionExpired': 'Your session expired — please sign in again.',
 
+  // Pricing
+  'pricing.title': 'Simple plans for every expedition',
+  'pricing.subtitle': 'Start free in the demo. Upgrade when your family catches the travel bug.',
+  'pricing.familyName': 'Family',
+  'pricing.familyPrice': 'One-time',
+  'pricing.familyDesc': 'Everything a family needs to map its journeys.',
+  'pricing.proName': 'Pro',
+  'pricing.proPrice': 'per month',
+  'pricing.proDesc': 'For serious travel families. Priority support and richer stats.',
+  'pricing.agencyName': 'Agency',
+  'pricing.agencyPrice': 'per month',
+  'pricing.agencyDesc': 'White-label the tracker for your travel clients. Your brand, our engine.',
+  'pricing.cta': 'Get it on Whop',
+  'pricing.ctaSoon': 'Coming soon',
+  'pricing.feature1': 'Unlimited family members & countries',
+  'pricing.feature2': 'Interactive world map with per-member colors',
+  'pricing.feature3': 'Bucket list & trip notes',
+  'pricing.feature4': 'Shareable public map page',
+  'pricing.feature5': 'English, Russian & Armenian',
+  'pricing.featurePro1': 'Everything in Family',
+  'pricing.featurePro2': 'Advanced stats & continent breakdown',
+  'pricing.featurePro3': 'Priority support',
+  'pricing.featureAgency1': 'Everything in Pro',
+  'pricing.featureAgency2': 'White-label: your logo, your colors',
+  'pricing.featureAgency3': 'Source code license for client deployments',
+
   // Language switcher
   'lang.aria': 'Change language',
 } as const;
