@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle, Award, Trophy, Users } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 import { useCountUp } from '@/hooks/useCountUp';
 import { Stats } from '@/hooks/useStats';
 import { UserProfile } from '@/context/UserContext';
@@ -27,7 +28,7 @@ function AnimatedNumber({ value, decimals = 0 }: { value: number; decimals?: num
 }
 
 /** Progress ring showing % of the world visited. */
-function WorldRing({ percent }: { percent: number }) {
+function WorldRing({ percent, ofWorldLabel }: { percent: number; ofWorldLabel: string }) {
   const size = 132;
   const stroke = 10;
   const radius = (size - stroke) / 2;
@@ -62,7 +63,7 @@ function WorldRing({ percent }: { percent: number }) {
         <span className="font-display text-2xl font-bold text-white">
           <AnimatedNumber value={clamped} decimals={1} />%
         </span>
-        <span className="text-[11px] uppercase tracking-wider text-slate-400">of the world</span>
+        <span className="text-[11px] uppercase tracking-wider text-slate-400">{ofWorldLabel}</span>
       </div>
     </div>
   );
@@ -77,6 +78,7 @@ export default function StatsOverview({
   selectedMemberVisitedCount = 0,
   currentUser,
 }: StatsOverviewProps) {
+  const { t } = useLanguage();
   const [started, setStarted] = useState(false);
   useEffect(() => {
     if (!isLoading && stats) setStarted(true);
@@ -106,7 +108,7 @@ export default function StatsOverview({
     return (
       <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-300">
         <AlertCircle className="h-5 w-5 flex-shrink-0" />
-        <p>Couldn&apos;t load your stats. {error}</p>
+        <p>{t('stats.error', { error })}</p>
       </div>
     );
   }
@@ -121,7 +123,7 @@ export default function StatsOverview({
   const travelers = [
     ...(personalCount > 0 && currentUser ? [{
       id: 'you',
-      name: `${currentUser.username} (you)`,
+      name: t('stats.youName', { name: currentUser.username }),
       color: currentUser.avatar_color || '#6366f1',
       count: personalCount,
     }] : []),
@@ -147,19 +149,19 @@ export default function StatsOverview({
         <div className="flex-1 space-y-8">
           <motion.div variants={fadeUp}>
             <h2 className="font-display text-sm font-medium uppercase tracking-widest text-slate-400">
-              {selectedMember ? `${selectedMember.name}'s journey` : 'Journey so far'}
+              {selectedMember ? t('stats.memberJourney', { name: selectedMember.name }) : t('stats.journey')}
             </h2>
             <p className="mt-2 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
               <AnimatedNumber value={selectedMember ? selectedMemberVisitedCount : totalVisits} />
               <span className="ml-3 text-lg font-medium text-slate-400">
                 {selectedMember
-                  ? `of the family's ${general.totalCountries} countries`
-                  : 'countries visited'}
+                  ? t('stats.ofFamilyTotal', { n: general.totalCountries })
+                  : t('stats.countriesVisited')}
               </span>
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-slate-400">
               <span className="inline-flex items-center gap-1.5">
-                <Users className="h-3.5 w-3.5" /> {Math.round(totalMembers)} {totalMembers === 1 ? 'explorer' : 'explorers'}
+                <Users className="h-3.5 w-3.5" /> {Math.round(totalMembers)} {t('stats.explorers', { n: Math.round(totalMembers) })}
               </span>
               {general.mostVisitedCountry.countryId != null && (
                 <span className="inline-flex items-center gap-1.5">
@@ -173,7 +175,7 @@ export default function StatsOverview({
           {travelers.length > 0 && (
             <motion.div variants={fadeUp} className="space-y-3">
               <h3 className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                <Award className="h-4 w-4 text-teal-300" /> Family leaderboard
+                <Award className="h-4 w-4 text-teal-300" /> {t('stats.leaderboard')}
               </h3>
               <div className="space-y-2.5">
                 {travelers.map((t, i) => (
@@ -198,7 +200,7 @@ export default function StatsOverview({
 
         {/* Right: ring + regions */}
         <motion.div variants={fadeUp} className="flex flex-col items-center gap-6 lg:w-64">
-          <WorldRing percent={percent} />
+          <WorldRing percent={percent} ofWorldLabel={t('stats.ofWorld')} />
           {regions && regions.length > 0 && (
             <div className="flex w-full flex-wrap justify-center gap-1.5 lg:justify-start">
               {regions

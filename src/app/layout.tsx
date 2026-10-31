@@ -1,11 +1,12 @@
 import './globals.css';
-import { Inter, Outfit } from 'next/font/google';
+import { Inter, Outfit, Noto_Sans_Armenian } from 'next/font/google';
 import type { Metadata } from 'next';
 import { Toaster } from 'react-hot-toast';
 import { UserProvider } from '@/context/UserContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'cyrillic'],
   display: 'swap',
   variable: '--font-inter',
 });
@@ -14,6 +15,12 @@ const outfit = Outfit({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-display',
+});
+
+const notoArmenian = Noto_Sans_Armenian({
+  subsets: ['armenian'],
+  display: 'swap',
+  variable: '--font-armenian',
 });
 
 export const metadata: Metadata = {
@@ -34,9 +41,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
+    <html lang="en" className={`${inter.variable} ${outfit.variable} ${notoArmenian.variable}`}>
       <body className="min-h-screen bg-slate-950 font-sans text-slate-100" suppressHydrationWarning>
-        <UserProvider>
+        <LanguageProvider>
+          <UserProvider>
           <Toaster
             position="top-center"
             toastOptions={{
@@ -56,7 +64,8 @@ export default function RootLayout({
             }}
           />
           {children}
-        </UserProvider>
+          </UserProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

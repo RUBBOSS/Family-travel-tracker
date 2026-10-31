@@ -6,6 +6,7 @@ import { useUserContext } from '@/context/UserContext';
 import { FamilyMemberWithMeta } from '@/hooks/useFamilyMembers';
 import { X, Users } from 'lucide-react';
 import ConfirmationDialog from './ConfirmationDialog';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface FamilyMemberTabsProps {
   familyMembers: FamilyMemberWithMeta[];
@@ -21,6 +22,7 @@ interface FamilyMemberTabsProps {
 
 export default function FamilyMemberTabs({ familyMembers, loading, selectedMemberId, onDeleteMember, onMemberSelect, showAllChip = false, allSelected = false, onSelectAll }: FamilyMemberTabsProps) {
   const { currentUser } = useUserContext();
+  const { t } = useLanguage();
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     memberId: number | null;
@@ -60,7 +62,7 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
       console.error('Delete failed:', error);
       setConfirmDialog({ isOpen: false, memberId: null, memberName: '' });
       // Toast-level feedback lives in the hook; keep dialog closed either way.
-      window.alert(`Couldn't remove ${confirmDialog.memberName}. Please try again.`);
+      window.alert(t('members.deleteFailed', { name: confirmDialog.memberName }));
       return;
     }
     setConfirmDialog({ isOpen: false, memberId: null, memberName: '' });
@@ -90,7 +92,7 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-400/25 text-teal-300">
               <Users className="h-4 w-4" />
             </span>
-            <span className="font-semibold text-teal-100">Everyone</span>
+            <span className="font-semibold text-teal-100">{t('common.everyone')}</span>
           </motion.button>
         )}
 
@@ -114,7 +116,7 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/15 font-bold">
             {currentUser.username?.charAt(0).toUpperCase()}
           </span>
-          <span className="font-semibold">{currentUser.username} (you)</span>
+          <span className="font-semibold">{t('stats.youName', { name: currentUser.username })}</span>
         </motion.button>
 
         {/* Family member chips */}
@@ -148,7 +150,7 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
               <span
                 role="button"
                 tabIndex={0}
-                aria-label={`Remove ${member.name}`}
+                aria-label={t('members.removeAria', { name: member.name })}
                 onClick={(e) => handleDeleteMember(member.id, member.name, e)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -170,8 +172,8 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
         <div className="flex items-center gap-4 rounded-2xl border border-dashed border-white/15 px-5 py-4">
           <Users className="h-8 w-8 text-slate-500" />
           <div>
-            <p className="text-sm font-medium text-slate-300">No family members yet</p>
-            <p className="text-sm text-slate-500">Add one to start coloring the map together.</p>
+            <p className="text-sm font-medium text-slate-300">{t('members.emptyTitle')}</p>
+            <p className="text-sm text-slate-500">{t('members.emptyText')}</p>
           </div>
         </div>
       )}
@@ -181,10 +183,10 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
         isOpen={confirmDialog.isOpen}
         onClose={handleCloseDialog}
         onConfirm={handleConfirmDelete}
-        title="Remove Family Member"
-        message="Are you sure you want to remove this family member? This will permanently delete all their travel data and visited countries."
-        confirmText="Remove Member"
-        cancelText="Keep Member"
+        title={t('members.confirmTitle')}
+        message={t('members.confirmText')}
+        confirmText={t('members.confirmRemove')}
+        cancelText={t('members.confirmKeep')}
         type="danger"
         memberName={confirmDialog.memberName}
       />

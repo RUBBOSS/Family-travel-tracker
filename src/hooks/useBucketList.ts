@@ -2,6 +2,7 @@ import { supabase } from '@/utils/supabaseClient';
 import { useUserContext } from '@/context/UserContext';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/context/LanguageContext';
 import { FamilyScope } from './useVisitedCountries';
 
 export type BucketListItem = {
@@ -17,6 +18,7 @@ export type BucketListItem = {
 
 export function useBucketList(selectedFamilyMemberId: FamilyScope = null) {
   const { currentUser } = useUserContext();
+  const { t } = useLanguage();
   const [items, setItems] = useState<BucketListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const lastFetchedKey = useRef<string | null>(null);
@@ -73,7 +75,7 @@ export function useBucketList(selectedFamilyMemberId: FamilyScope = null) {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error('Your session expired — please sign in again.');
+      if (!accessToken) throw new Error(t('toast.sessionExpired'));
 
       const response = await fetch('/api/bucket-list', {
         method: 'POST',
@@ -93,7 +95,7 @@ export function useBucketList(selectedFamilyMemberId: FamilyScope = null) {
         throw new Error(errorData.error || `Error: ${response.status}`);
       }
 
-      toast.success('Added to your bucket list');
+      toast.success(t('toast.bucketAdded'));
       lastFetchedKey.current = null;
       await fetchBucketList(true);
     } catch (err: any) {
@@ -120,7 +122,7 @@ export function useBucketList(selectedFamilyMemberId: FamilyScope = null) {
         throw new Error(errorData.error || `Error: ${response.status}`);
       }
 
-      toast.success('Removed from bucket list');
+      toast.success(t('toast.bucketRemoved'));
       lastFetchedKey.current = null;
       await fetchBucketList(true);
     } catch (err: any) {

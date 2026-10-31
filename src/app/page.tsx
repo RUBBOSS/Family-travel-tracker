@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { Compass, Loader2, MapPin, Share2, Sparkles, Users } from 'lucide-react';
 import { supabase } from '@/utils/supabaseClient';
 import { AuroraBackground } from '@/components/AuroraBackground';
-import { fadeUp, staggerContainer } from '@/lib/motion';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/context/LanguageContext';
 import { useUserContext } from '@/context/UserContext';
+import { fadeUp, staggerContainer } from '@/lib/motion';
 
 const WorldMapSvg = dynamic(() => import('@/components/WorldMap/WorldMapSvg'), {
   ssr: false,
@@ -34,6 +36,7 @@ const SAMPLE_COLORS: Record<string, string> = {
 const CYCLE = ['JP', 'IS', 'PE', 'ZA', 'CA', 'NZ'];
 
 export default function LandingPage() {
+  const { t } = useLanguage();
   const { currentUser, isLoading: authLoading } = useUserContext();
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoError, setDemoError] = useState<string | null>(null);
@@ -56,13 +59,17 @@ export default function LandingPage() {
       });
       if (error) throw error;
       window.location.href = '/app';
-    } catch (err: any) {
-      setDemoError(err.message || 'The demo is warming up — please try again in a moment.');
+    } catch {
+      setDemoError(t('landing.demoError'));
       setDemoLoading(false);
     }
   };
 
-  const primaryHref = useMemo(() => (currentUser ? '/app' : '/app'), [currentUser]);
+  const features = [
+    { icon: Users, title: t('landing.feature1Title'), text: t('landing.feature1Text') },
+    { icon: MapPin, title: t('landing.feature2Title'), text: t('landing.feature2Text') },
+    { icon: Share2, title: t('landing.feature3Title'), text: t('landing.feature3Text') },
+  ];
 
   return (
     <main className="relative min-h-screen overflow-x-hidden pb-20">
@@ -75,13 +82,14 @@ export default function LandingPage() {
             <Compass className="h-5 w-5" />
           </span>
           <span className="font-display text-base font-semibold tracking-tight text-white">
-            Family Travel Tracker
+            {t('tracker.appTitle')}
           </span>
         </div>
         <nav className="flex items-center gap-2">
-          <Link href="/app" className="btn-ghost">Sign in</Link>
+          <LanguageSwitcher />
+          <Link href="/app" className="btn-ghost">{t('common.signIn')}</Link>
           <button onClick={handleTryDemo} className="btn-primary" disabled={demoLoading}>
-            {demoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Try live demo'}
+            {demoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('landing.ctaDemo')}
           </button>
         </nav>
       </header>
@@ -97,23 +105,22 @@ export default function LandingPage() {
           variants={fadeUp}
           className="mx-auto max-w-3xl text-center font-display text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-6xl"
         >
-          Every trip your family takes, on one glowing map.
+          {t('landing.heroTitle')}
         </motion.h1>
         <motion.p
           variants={fadeUp}
           className="mx-auto mt-5 max-w-xl text-center text-base leading-relaxed text-slate-300 sm:text-lg"
         >
-          Color the world by explorer. Keep the dates, the notes, the stories. Plan what&apos;s
-          next — and share the whole journey with a single link.
+          {t('landing.heroSubtitle')}
         </motion.p>
 
         <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <button onClick={handleTryDemo} className="btn-primary px-6 py-3 text-base" disabled={demoLoading}>
             {demoLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-            Try the live demo
+            {t('landing.ctaDemo')}
           </button>
-          <Link href={primaryHref} className="btn-secondary px-6 py-3 text-base">
-            {authLoading ? 'Open the app' : currentUser ? 'Open my map' : 'Create an account'}
+          <Link href="/app" className="btn-secondary px-6 py-3 text-base">
+            {authLoading ? t('landing.ctaOpenApp') : currentUser ? t('landing.ctaOpenMyMap') : t('landing.ctaCreate')}
           </Link>
         </motion.div>
         {demoError && (
@@ -130,7 +137,6 @@ export default function LandingPage() {
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#FF6B6B]" /> Emma</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#4ECDC4]" /> Jack</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#A78BFA]" /> Sophie</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#14b8a6]" /> You</span>
           </div>
         </motion.div>
       </motion.section>
@@ -138,23 +144,7 @@ export default function LandingPage() {
       {/* What it does — inline features, not card grids */}
       <section className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
         <div className="grid gap-10 sm:grid-cols-3">
-          {[
-            {
-              icon: Users,
-              title: 'One map, every explorer',
-              text: 'Each family member gets a color. Everyone\u2019s trips layer onto the same world — switch views in one tap, or see everything at once.',
-            },
-            {
-              icon: MapPin,
-              title: 'Stories, not just pins',
-              text: 'Dates and notes live with every country, so "that night in Kyoto" stays findable years later. Wishlist future trips and turn them into memories.',
-            },
-            {
-              icon: Share2,
-              title: 'A link that says it all',
-              text: 'Every family map has a public page. Grandparents, friends, travel agents — anyone with the link sees the journey. No account needed.',
-            },
-          ].map(({ icon: Icon, title, text }) => (
+          {features.map(({ icon: Icon, title, text }) => (
             <motion.div
               key={title}
               initial={{ opacity: 0, y: 16 }}
@@ -186,15 +176,15 @@ export default function LandingPage() {
         >
           <div>
             <p className="font-display text-3xl font-bold text-white tabular-nums">193</p>
-            <p className="text-sm text-slate-400">countries to claim</p>
+            <p className="text-sm text-slate-400">{t('landing.proofCountries')}</p>
           </div>
           <div>
             <p className="font-display text-3xl font-bold text-white tabular-nums">∞</p>
-            <p className="text-sm text-slate-400">family legends preserved</p>
+            <p className="text-sm text-slate-400">{t('landing.proofLegends')}</p>
           </div>
           <div>
             <p className="font-display text-3xl font-bold text-white tabular-nums">1</p>
-            <p className="text-sm text-slate-400">link to share it all</p>
+            <p className="text-sm text-slate-400">{t('landing.proofLink')}</p>
           </div>
         </motion.div>
       </section>
@@ -208,7 +198,7 @@ export default function LandingPage() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl"
         >
-          Where has your family been?
+          {t('landing.finalTitle')}
         </motion.h2>
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -219,16 +209,16 @@ export default function LandingPage() {
         >
           <button onClick={handleTryDemo} className="btn-primary px-6 py-3 text-base" disabled={demoLoading}>
             {demoLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-            Explore the demo map
+            {t('landing.finalCtaDemo')}
           </button>
           <Link href="/app" className="btn-secondary px-6 py-3 text-base">
-            Sign in
+            {t('common.signIn')}
           </Link>
         </motion.div>
       </section>
 
       <footer className="mx-auto mt-20 max-w-6xl px-4 text-center text-xs text-slate-600 sm:px-6">
-        Family Travel Tracker — built for families who measure life in stamps.
+        {t('landing.footer')}
       </footer>
     </main>
   );

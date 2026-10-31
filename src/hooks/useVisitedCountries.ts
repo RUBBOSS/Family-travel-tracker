@@ -2,6 +2,7 @@ import { supabase } from '@/utils/supabaseClient';
 import { useUserContext } from '@/context/UserContext';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/context/LanguageContext';
 
 export type FamilyScope = number | 'all' | null;
 
@@ -19,6 +20,7 @@ type VisitedCountry = {
 
 export function useVisitedCountries(selectedFamilyMemberId: FamilyScope = null) {
   const { currentUser } = useUserContext();
+  const { t } = useLanguage();
   const [visitedCountries, setVisitedCountries] = useState<VisitedCountry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +118,7 @@ export function useVisitedCountries(selectedFamilyMemberId: FamilyScope = null) 
       const accessToken = sessionData.session?.access_token;
 
       if (!accessToken) {
-        throw new Error('Your session expired — please sign in again.');
+        throw new Error(t('toast.sessionExpired'));
       }
 
       const dateToUse = visitDate ? new Date(visitDate).toISOString() : new Date().toISOString();
@@ -140,7 +142,7 @@ export function useVisitedCountries(selectedFamilyMemberId: FamilyScope = null) 
         throw new Error(errorData.error || `Error: ${response.status}`);
       }
 
-      toast.success('Country added!');
+      toast.success(t('toast.countryAdded'));
       lastFetchedKey.current = null;
       await fetchVisitedCountries(true);
     } catch (err: any) {
@@ -177,7 +179,7 @@ export function useVisitedCountries(selectedFamilyMemberId: FamilyScope = null) 
         throw new Error(errorData.error || `Error: ${response.status}`);
       }
 
-      toast.success('Country removed');
+      toast.success(t('toast.countryRemoved'));
       lastFetchedKey.current = null;
       await fetchVisitedCountries(true);
     } catch (err: any) {

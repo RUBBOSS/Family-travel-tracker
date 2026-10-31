@@ -15,6 +15,8 @@ import BucketListPanel from '@/components/BucketListPanel';
 import AddFamilyMemberDialog from '@/components/AddFamilyMemberDialog';
 import AuthForm from '@/components/AuthForm';
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/context/LanguageContext';
 import { useUserContext } from '@/context/UserContext';
 import { useVisitedCountries, FamilyScope } from '@/hooks/useVisitedCountries';
 import { useBucketList } from '@/hooks/useBucketList';
@@ -25,6 +27,7 @@ import { fadeUp, staggerContainer } from '@/lib/motion';
 import { BucketListItem } from '@/hooks/useBucketList';
 
 export default function TrackerPage() {
+  const { t } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [scope, setScope] = useState<FamilyScope>('all');
   const [highlightCode, setHighlightCode] = useState<string | null>(null);
@@ -46,9 +49,9 @@ export default function TrackerPage() {
     return visitedCountries.map(v => ({
       countryCode: v.countryCode,
       color: v.memberColor ?? (v.familyMemberId != null ? memberColorById.get(v.familyMemberId) ?? currentUserColor : currentUserColor),
-      memberName: v.memberName ?? (v.familyMemberId == null ? `${currentUser?.username ?? 'You'} (you)` : undefined),
+      memberName: v.memberName ?? (v.familyMemberId == null ? t('stats.youName', { name: currentUser?.username ?? '' }) : undefined),
     }));
-  }, [visitedCountries, familyMembers, currentUserColor, currentUser?.username]);
+  }, [visitedCountries, familyMembers, currentUserColor, currentUser?.username, t]);
 
   const handleCountrySelect = async (countryId: number, notes?: string, visitDate?: string, countryCode?: string) => {
     try {
@@ -173,14 +176,14 @@ export default function TrackerPage() {
               </span>
               <div className="min-w-0">
                 <h1 className="truncate font-display text-base sm:text-lg font-semibold tracking-tight text-white">
-                  <span className="hidden sm:inline">Family Travel Tracker</span>
-                  <span className="sm:hidden">Travel Tracker</span>
+                  <span className="hidden sm:inline">{t('tracker.appTitle')}</span>
+                  <span className="sm:hidden">{t('tracker.appTitleShort')}</span>
                 </h1>
               </div>
             </Link>
             <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
               <div className="text-right hidden md:block">
-                <p className="text-xs text-slate-400">Exploring as</p>
+                <p className="text-xs text-slate-400">{t('common.exploringAs')}</p>
                 <p className="text-sm font-semibold" style={{ color: currentUser.avatar_color }}>{currentUser.username}</p>
               </div>
               <div
@@ -190,9 +193,10 @@ export default function TrackerPage() {
               >
                 {currentUser.username.charAt(0).toUpperCase()}
               </div>
-              <button onClick={handleSignOut} className="btn-ghost" aria-label="Sign out">
+              <LanguageSwitcher />
+              <button onClick={handleSignOut} className="btn-ghost" aria-label={t('common.signOut')}>
                 <LogOut size={15} />
-                <span className="hidden sm:inline">Sign out</span>
+                <span className="hidden sm:inline">{t('common.signOut')}</span>
               </button>
             </div>
           </div>
@@ -222,14 +226,14 @@ export default function TrackerPage() {
         {/* Family Member Selection */}
         <motion.section variants={fadeUp} className="surface-card p-6">
           <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
-            <h2 className="section-heading">Family Members</h2>
+            <h2 className="section-heading">{t('members.title')}</h2>
             <button
               className="btn-primary"
               onClick={() => setIsDialogOpen(true)}
               disabled={familyMembersLoading || isLoading || !currentUser}
             >
               <Plus size={16} />
-              Add Member
+              {t('members.add')}
             </button>
           </div>
           <FamilyMemberTabs
@@ -247,14 +251,14 @@ export default function TrackerPage() {
         {/* Country Search */}
         <motion.section variants={fadeUp} className="surface-card p-6">
           <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
-            <h2 className="section-heading">Add a Country</h2>
+            <h2 className="section-heading">{t('search.title')}</h2>
             {selectedMember ? (
               <div className="text-sm text-slate-300">
-                Adding for <span className="font-semibold" style={{ color: selectedMember.avatarColor ?? '#5eead4' }}>{selectedMember.name}</span>
+                {t('search.addingFor')} <span className="font-semibold" style={{ color: selectedMember.avatarColor ?? '#5eead4' }}>{selectedMember.name}</span>
               </div>
             ) : (
               <div className="text-sm text-slate-300">
-                Adding for <span className="font-semibold text-teal-300">{currentUser.username}</span> (you)
+                {t('search.addingFor')} <span className="font-semibold text-teal-300">{currentUser.username}</span> ({t('common.you')})
               </div>
             )}
           </div>
@@ -268,16 +272,16 @@ export default function TrackerPage() {
         {/* Interactive World Map */}
         <motion.section variants={fadeUp} className="surface-card p-6">
           <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
-            <h2 className="section-heading">World Map</h2>
+            <h2 className="section-heading">{t('map.title')}</h2>
             <a
               href={shareUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary"
-              title="Open your shareable public map"
+              title={t('map.publicMap')}
             >
               <Share2 size={15} />
-              Public map
+              {t('map.publicMap')}
             </a>
           </div>
           <WorldMap
@@ -286,21 +290,21 @@ export default function TrackerPage() {
             highlightCountryCode={highlightCode}
             isLoading={visitedCountriesLoading}
             title={scope === 'all'
-              ? `${currentUser.username}'s family world`
+              ? t('map.familyWorld', { name: currentUser.username })
               : scope === null
-                ? `${currentUser.username}'s world`
-                : `${selectedMember?.name ?? 'Family member'}'s world`}
+                ? t('map.personalWorld', { name: currentUser.username })
+                : t('map.memberWorld', { name: selectedMember?.name ?? '' })}
           />
         </motion.section>
 
         {/* Bucket List */}
         <motion.section variants={fadeUp} className="surface-card p-6">
           <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
-            <h2 className="section-heading">Bucket List</h2>
+            <h2 className="section-heading">{t('bucket.title')}</h2>
             {bucketItems.length > 0 && (
               <span className="text-sm text-slate-400">
                 <span className="font-semibold text-amber-300 tabular-nums">{bucketItems.length}</span>{' '}
-                {bucketItems.length === 1 ? 'place' : 'places'} to go
+                {t('bucket.placesToGo', { n: bucketItems.length }).replace(/^\d+\s*/, '')}
               </span>
             )}
           </div>
@@ -314,7 +318,7 @@ export default function TrackerPage() {
 
         {/* Visited Countries */}
         <motion.section variants={fadeUp} className="surface-card p-6">
-          <h2 className="section-heading mb-5">Visited Countries</h2>
+          <h2 className="section-heading mb-5">{t('table.title')}</h2>
           <CountryTable
             countries={tableCountries}
             onRemoveCountry={(countryId) => handleCountryRemove(parseInt(countryId))}

@@ -64,8 +64,8 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['var(--font-display)', 'Outfit', 'Inter', 'sans-serif'],
+        sans: ['var(--font-inter)', 'var(--font-armenian)', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-inter)', 'var(--font-armenian)', 'Outfit', 'Inter', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

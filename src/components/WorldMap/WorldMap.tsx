@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/context/LanguageContext';
 
 // Client-only: the SVG is fetched and injected in the browser
 const WorldMapSvg = dynamic(() => import('@/components/WorldMap/WorldMapSvg'), {
@@ -48,6 +49,7 @@ export default function WorldMap({
     return colors;
   }, [visits]);
 
+  const { t } = useLanguage();
   const uniqueCount = Object.keys(countryColors).length;
   const percent = ((uniqueCount / TOTAL_COUNTRIES) * 100).toFixed(1);
 
@@ -55,7 +57,7 @@ export default function WorldMap({
     const seen = new Map<string, string>();
     for (const visit of visits) {
       if (!seen.has(visit.color)) {
-        seen.set(visit.color, visit.memberName || 'Visited');
+        seen.set(visit.color, visit.memberName || t('map.visited'));
       }
     }
     return Array.from(seen.entries()).map(([color, name]) => ({ color, name }));
@@ -66,12 +68,12 @@ export default function WorldMap({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-display text-sm font-semibold text-white">
-            {title ?? 'Family world map'}
+            {title ?? t('map.defaultTitle')}
           </p>
           <p className="text-sm text-slate-400">
             <span className="font-semibold text-teal-300 tabular-nums">{uniqueCount}</span>{' '}
-            {uniqueCount === 1 ? 'country' : 'countries'} visited
-            <span className="text-slate-500"> · {percent}% of the world</span>
+            {t('map.countriesVisited', { n: uniqueCount })}
+            <span className="text-slate-500"> · {percent}% {t('stats.ofWorld')}</span>
           </p>
         </div>
 
@@ -89,12 +91,12 @@ export default function WorldMap({
                 className="h-2.5 w-2.5 rounded-sm border border-dashed"
                 style={{ borderColor: '#fbbf24', backgroundColor: '#1e293b' }}
               />
-              Bucket list
+              {t('map.bucketLegend')}
             </span>
           )}
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-slate-600" />
-            Not visited yet
+            {t('map.notVisited')}
           </span>
         </div>
       </div>
@@ -114,7 +116,7 @@ export default function WorldMap({
       {uniqueCount === 0 && !isLoading && (!bucketCodes || bucketCodes.length === 0) && (
         <div className="-mt-72 flex justify-center">
           <p className="rounded-full border border-white/10 bg-slate-900/80 px-4 py-2 text-sm text-slate-300 backdrop-blur-sm">
-            No countries marked yet — add one above and watch it glow.
+            {t('map.empty')}
           </p>
         </div>
       )}

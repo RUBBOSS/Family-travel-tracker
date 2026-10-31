@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Calendar, Check, Loader2, MapPin, Search, Star, X } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Country {
   id: number;
@@ -23,6 +24,7 @@ const flagUrl = (code: string, width: 40 | 320 = 40) =>
   `https://flagcdn.com/w${width}/${code.toLowerCase()}.png`;
 
 export default function CountrySearch({ onCountryAdd, onBucketAdd, bucketCountryIds = [] }: CountrySearchProps) {
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState('');
   const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0]);
@@ -158,7 +160,7 @@ export default function CountrySearch({ onCountryAdd, onBucketAdd, bucketCountry
             type="text"
             id="country-search"
             name="countrySearch"
-            placeholder="Which country did you visit?"
+            placeholder={t('search.placeholder')}
             value={query}
             autoComplete="off"
             role="combobox"
@@ -214,7 +216,7 @@ export default function CountrySearch({ onCountryAdd, onBucketAdd, bucketCountry
         <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
           <div>
             <label htmlFor="visit-date" className="mb-1.5 block text-sm font-medium text-slate-300">
-              When
+              {t('search.when')}
             </label>
             <div className="relative">
               <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
@@ -231,13 +233,13 @@ export default function CountrySearch({ onCountryAdd, onBucketAdd, bucketCountry
           </div>
           <div>
             <label htmlFor="visit-notes" className="mb-1.5 block text-sm font-medium text-slate-300">
-              Notes <span className="font-normal text-slate-500">(optional)</span>
+              {t('search.notes')} <span className="font-normal text-slate-500">({t('search.notesOptional')})</span>
             </label>
             <input
               type="text"
               id="visit-notes"
               name="visitNotes"
-              placeholder="A memory from the trip…"
+              placeholder={t('search.notesPlaceholder')}
               value={notes}
               autoComplete="off"
               onChange={(e) => setNotes(e.target.value)}
@@ -258,25 +260,25 @@ export default function CountrySearch({ onCountryAdd, onBucketAdd, bucketCountry
               <div className="flex gap-2 pt-1">
                 <button onClick={handleAddCountry} disabled={!selectedCountry} className="btn-primary flex-1">
                   <MapPin className="h-4 w-4" />
-                  Add to map
+                  {t('search.addToMap')}
                 </button>
                 {onBucketAdd && (
                   <button
                     onClick={handleStar}
                     disabled={!selectedCountry || starring}
                     className="btn-secondary disabled:cursor-not-allowed"
-                    title={alreadyBucketed ? 'Already on your bucket list' : 'Add to bucket list (plan this trip)'}
+                    title={alreadyBucketed ? t('search.wishlistedTitle') : t('search.wishlistTitle')}
                   >
                     {starring ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Star className={`h-4 w-4 ${alreadyBucketed ? 'fill-amber-300 text-amber-300' : 'text-amber-300'}`} />
                     )}
-                    <span className="hidden sm:inline">{alreadyBucketed ? 'Wishlisted' : 'Wishlist'}</span>
+                    <span className="hidden sm:inline">{alreadyBucketed ? t('search.wishlisted') : t('search.wishlist')}</span>
                   </button>
                 )}
                 <button onClick={handleClear} className="btn-secondary">
-                  Clear
+                  {t('common.clear')}
                 </button>
               </div>
             </motion.div>
@@ -303,7 +305,7 @@ export default function CountrySearch({ onCountryAdd, onBucketAdd, bucketCountry
           >
             {isLoading ? (
               <div className="flex items-center gap-2 px-4 py-3 text-sm text-slate-400">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading countries…
+                <Loader2 className="h-4 w-4 animate-spin" /> {t('search.loadingCountries')}
               </div>
             ) : filteredCountries.length > 0 ? (
               filteredCountries.map((country, index) => (
@@ -324,7 +326,7 @@ export default function CountrySearch({ onCountryAdd, onBucketAdd, bucketCountry
               ))
             ) : (
               <div className="px-4 py-3 text-sm text-slate-400">
-                No countries match &ldquo;{query}&rdquo;
+                {t('search.noMatch', { q: query })}
               </div>
             )}
           </motion.div>

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Compass, Loader2, Trash2 } from 'lucide-react';
 import { BucketListItem } from '@/hooks/useBucketList';
 import { listItem } from '@/lib/motion';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface BucketListPanelProps {
   items: BucketListItem[];
@@ -21,6 +22,7 @@ export default function BucketListPanel({
   onMarkVisited,
   onRemove,
 }: BucketListPanelProps) {
+  const { t } = useLanguage();
   if (isLoading) {
     return (
       <div className="space-y-2" aria-busy="true">
@@ -35,9 +37,9 @@ export default function BucketListPanel({
       <div className="flex items-center gap-4 rounded-2xl border border-dashed border-white/15 px-5 py-4">
         <Compass className="h-8 w-8 text-slate-500" />
         <div>
-          <p className="text-sm font-medium text-slate-300">Nothing planned yet</p>
+          <p className="text-sm font-medium text-slate-300">{t('bucket.emptyTitle')}</p>
           <p className="text-sm text-slate-500">
-            Star a country while adding it to keep it on the wishlist — it shows as a dashed outline on the map.
+            {t('bucket.emptyText')}
           </p>
         </div>
       </div>
@@ -76,14 +78,14 @@ export default function BucketListPanel({
               onClick={() => onMarkVisited(item)}
               disabled={busyId === item.id}
               className="btn-secondary !rounded-lg px-2.5 py-1.5 text-xs text-teal-300 hover:text-teal-200"
-              title="Log this trip as visited"
+              title={t('bucket.wentThereTitle')}
             >
               {busyId === item.id ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <>
                   <Check className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Went there</span>
+                  <span className="hidden sm:inline">{t('bucket.wentThere')}</span>
                 </>
               )}
             </button>
@@ -92,7 +94,7 @@ export default function BucketListPanel({
               onClick={() => onRemove(item)}
               disabled={busyId === item.id}
               className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-500/10 hover:text-red-300"
-              aria-label={`Remove ${item.countryName} from bucket list`}
+              aria-label={t('table.removeAria', { name: item.countryName })}
             >
               <Trash2 className="h-4 w-4" />
             </button>

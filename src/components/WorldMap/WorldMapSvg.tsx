@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useLanguage } from '@/context/LanguageContext';
 
 export interface WorldMapSvgProps {
   /** ISO2 code -> fill color. Countries absent from the record stay unvisited. */
@@ -39,6 +40,7 @@ const isIso2 = (id: string) => /^[A-Z]{2}$/.test(id);
  * moment), and a freshly added country pulses.
  */
 export default function WorldMapSvg({ countryColors, bucketCodes, highlightCode, onLoad }: WorldMapSvgProps) {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [ready, setReady] = useState(false);
@@ -252,7 +254,7 @@ export default function WorldMapSvg({ countryColors, bucketCodes, highlightCode,
                   className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-950"
                   style={{ backgroundColor: tooltip.color }}
                 >
-                  Visited
+                  {t('map.visited')}
                 </span>
               )}
             </div>

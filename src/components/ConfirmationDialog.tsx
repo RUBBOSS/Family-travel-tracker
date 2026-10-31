@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Info, X } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export default function ConfirmationDialog({
 }: ConfirmationDialogProps) {
   const [mounted, setMounted] = useState(false);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => setMounted(true), []);
 
@@ -110,7 +112,7 @@ export default function ConfirmationDialog({
               <button
                 onClick={onClose}
                 className="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label="Close dialog"
+                aria-label={t('common.close')}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -133,7 +135,7 @@ export default function ConfirmationDialog({
                     </span>
                     <div>
                       <p className="text-sm font-medium text-white">{memberName}</p>
-                      <p className="text-xs text-slate-500">Family member</p>
+                      <p className="text-xs text-slate-500">{t('members.role')}</p>
                     </div>
                   </div>
                 )}

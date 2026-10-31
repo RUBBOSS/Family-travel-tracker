@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Globe2, Loader2 } from 'lucide-react';
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/context/LanguageContext';
 import { fadeUp, staggerContainer } from '@/lib/motion';
 
 const WorldMapSvg = dynamic(() => import('@/components/WorldMap/WorldMapSvg'), {
@@ -33,6 +35,7 @@ interface PublicMapData {
 const TOTAL_COUNTRIES = 193;
 
 export default function PublicMapPage({ params }: { params: Promise<{ username: string }> }) {
+  const { t } = useLanguage();
   const [username, setUsername] = useState<string | null>(null);
   const [data, setData] = useState<PublicMapData | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'not-found'>('loading');
@@ -93,10 +96,10 @@ export default function PublicMapPage({ params }: { params: Promise<{ username: 
       <main className="relative flex min-h-screen flex-col items-center justify-center px-4 text-center">
         <AuroraBackground />
         <Globe2 className="h-10 w-10 text-slate-500" />
-        <h1 className="mt-6 font-display text-3xl font-bold text-white">No traveler at this address</h1>
-        <p className="mt-2 text-slate-400">The link may be wrong, or this map doesn&apos;t exist (yet).</p>
+        <h1 className="mt-6 font-display text-3xl font-bold text-white">{t('share.notFoundTitle')}</h1>
+        <p className="mt-2 text-slate-400">{t('share.notFoundText')}</p>
         <Link href="/" className="btn-primary mt-8">
-          Explore Family Travel Tracker
+          {t('share.notFoundCta')}
         </Link>
       </main>
     );
@@ -122,8 +125,9 @@ export default function PublicMapPage({ params }: { params: Promise<{ username: 
             <p className="text-xs text-slate-400">@{profile.username}</p>
           </div>
         </div>
+        <LanguageSwitcher />
         <Link href="/" className="btn-secondary">
-          Make your own map
+          {t('share.makeYourOwn')}
         </Link>
       </header>
 
@@ -136,11 +140,11 @@ export default function PublicMapPage({ params }: { params: Promise<{ username: 
         {/* Headline numbers */}
         <motion.section variants={fadeUp} className="text-center">
           <h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-5xl">
-            {uniqueCount} countries. One family.
+            {t('share.headline', { n: uniqueCount })}
           </h1>
           <p className="mt-3 text-slate-400">
-            {percent}% of the world explored together
-            {data.familyMembers.length > 0 && <> — with {data.familyMembers.map(m => m.name).join(', ')}</>}
+            {t('share.subtitle', { p: percent })}
+            {data.familyMembers.length > 0 && t('share.withMembers', { names: data.familyMembers.map(m => m.name).join(', ') })}
           </p>
         </motion.section>
 
@@ -152,7 +156,7 @@ export default function PublicMapPage({ params }: { params: Promise<{ username: 
         {/* Legend + recent trips */}
         <motion.section variants={fadeUp} className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
           <div className="surface-card p-5">
-            <h2 className="section-heading mb-4 text-base">Explorers</h2>
+            <h2 className="section-heading mb-4 text-base">{t('share.explorers')}</h2>
             <ul className="space-y-2.5">
               {Array.from(new Map(visits.map(v => [v.memberColor, v.memberName])).entries()).map(([color, name]) => (
                 <li key={color} className="flex items-center gap-3 text-sm">
@@ -167,7 +171,7 @@ export default function PublicMapPage({ params }: { params: Promise<{ username: 
           </div>
 
           <div className="surface-card p-5">
-            <h2 className="section-heading mb-4 text-base">Latest adventures</h2>
+            <h2 className="section-heading mb-4 text-base">{t('share.latest')}</h2>
             <ul className="space-y-2.5">
               {visits.slice(0, 5).map((visit, i) => (
                 <li key={`${visit.countryCode}-${i}`} className="flex items-center gap-3 text-sm">
@@ -190,10 +194,10 @@ export default function PublicMapPage({ params }: { params: Promise<{ username: 
         {/* CTA */}
         <motion.section variants={fadeUp} className="mt-12 text-center">
           <p className="font-display text-xl font-semibold text-white">
-            Where has your family been?
+            {t('share.finalTitle')}
           </p>
           <Link href="/" className="btn-primary mt-4">
-            Start your family map
+            {t('share.finalCta')}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </motion.section>

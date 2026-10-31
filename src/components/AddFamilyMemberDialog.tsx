@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Loader2, UserPlus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/utils/supabaseClient';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface AddFamilyMemberDialogProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const AVATAR_COLORS = [
 ];
 
 export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, addFamilyMember }: AddFamilyMemberDialogProps) {
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
   const [customColor, setCustomColor] = useState('');
@@ -32,7 +34,7 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
     e.preventDefault();
 
     if (!name.trim()) {
-      setError('Give your family member a name first.');
+      setError(t('members.errorName'));
       return;
     }
 
@@ -73,7 +75,7 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
       onMemberAdded?.();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add family member');
+      setError(err instanceof Error ? err.message : t('members.dialogTitle'));
     } finally {
       setLoading(false);
     }
@@ -103,7 +105,7 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Add family member"
+            aria-label={t('members.dialogTitle')}
             className="relative w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-[0_32px_80px_-16px_rgba(0,0,0,0.9)]"
             initial={{ opacity: 0, scale: 0.94, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
@@ -114,12 +116,12 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-400/15 text-teal-300 ring-1 ring-teal-400/30">
                   <UserPlus className="h-4.5 w-4.5" />
                 </span>
-                Add Family Member
+                {t('members.dialogTitle')}
               </h2>
               <button
                 onClick={onClose}
                 className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label="Close dialog"
+                aria-label={t('common.close')}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -128,14 +130,14 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="memberName" className="mb-1.5 block text-sm font-medium text-slate-300">
-                  Name
+                  {t('members.nameLabel')}
                 </label>
                 <input
                   id="memberName"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Emma"
+                  placeholder={t('members.namePlaceholder')}
                   className="input-primary"
                   autoFocus
                   maxLength={100}
@@ -143,7 +145,7 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
               </div>
 
               <div>
-                <span className="mb-2 block text-sm font-medium text-slate-300">Their color on the map</span>
+                <span className="mb-2 block text-sm font-medium text-slate-300">{t('members.colorLabel')}</span>
                 <div className="grid grid-cols-8 gap-2">
                   {AVATAR_COLORS.map((color) => (
                     <button
@@ -174,9 +176,9 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
                       setUseCustomColor(true);
                     }}
                     className="h-7 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
-                    aria-label="Custom color"
+                    aria-label={t('members.customColor')}
                   />
-                  <span className="text-sm text-slate-300">Custom color</span>
+                  <span className="text-sm text-slate-300">{t('members.customColor')}</span>
                   {useCustomColor && (
                     <span
                       className="ml-auto h-4 w-4 rounded-full ring-1 ring-white/40"
@@ -206,17 +208,17 @@ export default function AddFamilyMemberDialog({ isOpen, onClose, onMemberAdded, 
                   {(name.trim() || '?').charAt(0).toUpperCase()}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-white">{name.trim() || 'Preview'}</p>
-                  <p className="text-xs text-slate-500">This is how {name.trim() ? name.trim() : 'the chip'} appears</p>
+                  <p className="truncate text-sm font-medium text-white">{name.trim() || t('members.preview')}</p>
+                  <p className="text-xs text-slate-500">{name.trim() ? t('members.previewHint', { name: name.trim() }) : t('members.previewHintEmpty')}</p>
                 </div>
               </div>
 
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={onClose} className="btn-secondary flex-1" disabled={loading}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button type="submit" className="btn-primary flex-1" disabled={loading || !name.trim()}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Member'}
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('members.add')}
                 </button>
               </div>
             </form>

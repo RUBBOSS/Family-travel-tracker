@@ -5,9 +5,12 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Compass, Globe2, Loader2, Users } from 'lucide-react';
 import { supabase } from '@/utils/supabaseClient';
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/context/LanguageContext';
 import { fadeUp } from '@/lib/motion';
 
 export default function AuthForm() {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +29,7 @@ export default function AuthForm() {
         if (signInError) throw signInError;
       } else {
         if (!username.trim()) {
-          setError('Pick a username to create your account.');
+          setError(t('auth.errorUsername'));
           setLoading(false);
           return;
         }
@@ -66,32 +69,36 @@ export default function AuthForm() {
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-400/20 text-teal-300 ring-1 ring-teal-400/30">
               <Globe2 className="h-5 w-5" />
             </span>
-            <span className="font-display text-lg font-semibold tracking-tight text-white">Family Travel Tracker</span>
+            <span className="font-display text-lg font-semibold tracking-tight text-white">{t('tracker.appTitle')}</span>
           </div>
 
           <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.12, delayChildren: 0.15 } } }}>
             <motion.h2 variants={fadeUp} className="font-display text-3xl font-bold leading-tight tracking-tight text-white">
-              Every trip your family takes, on one glowing map.
+              {t('auth.panelTitle')}
             </motion.h2>
             <motion.p variants={fadeUp} className="mt-4 max-w-sm text-sm leading-relaxed text-slate-300">
-              Color-code the world by explorer, keep notes and dates, plan what&apos;s next — and share your map with a link.
+              {t('auth.panelText')}
             </motion.p>
 
             <motion.ul variants={fadeUp} className="mt-8 space-y-3 text-sm text-slate-300">
               <li className="flex items-center gap-3">
-                <Compass className="h-4 w-4 text-teal-300" /> 193 countries ready to be colored in
+                <Compass className="h-4 w-4 text-teal-300" /> {t('auth.bullet1')}
               </li>
               <li className="flex items-center gap-3">
-                <Users className="h-4 w-4 text-violet-300" /> Each family member gets their own color
+                <Users className="h-4 w-4 text-violet-300" /> {t('auth.bullet2')}
               </li>
             </motion.ul>
           </motion.div>
 
-          <p className="text-xs text-slate-500">Start your expedition tonight.</p>
+          <p className="text-xs text-slate-500">{t('auth.panelFooter')}</p>
         </div>
 
         {/* Form panel */}
         <div className="p-8 sm:p-10">
+          <div className="mb-6 flex justify-end">
+            <LanguageSwitcher variant="plain" />
+          </div>
+
           {/* Mode switch */}
           <div className="mb-8 grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-slate-950/50 p-1" role="tablist">
             {(['login', 'register'] as const).map(m => (
@@ -109,7 +116,7 @@ export default function AuthForm() {
                     transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                   />
                 )}
-                <span className="relative">{m === 'login' ? 'Sign in' : 'Create account'}</span>
+                <span className="relative">{m === 'login' ? t('auth.tabSignIn') : t('auth.tabCreate')}</span>
               </button>
             ))}
           </div>
@@ -125,11 +132,11 @@ export default function AuthForm() {
             >
               {mode === 'register' && (
                 <div>
-                  <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-slate-300">Username</label>
+                  <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-slate-300">{t('auth.username')}</label>
                   <input
                     id="username"
                     type="text"
-                    placeholder="alice_explorer"
+                    placeholder={t('auth.usernamePlaceholder')}
                     value={username}
                     onChange={e => setUsername(e.target.value)}
                     className="input-primary"
@@ -139,11 +146,11 @@ export default function AuthForm() {
               )}
 
               <div>
-                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">Email</label>
+                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">{t('auth.email')}</label>
                 <input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={t('auth.emailPlaceholder')}
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="input-primary"
@@ -153,11 +160,11 @@ export default function AuthForm() {
               </div>
 
               <div>
-                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">Password</label>
+                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">{t('auth.password')}</label>
                 <input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="input-primary"
@@ -182,20 +189,20 @@ export default function AuthForm() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    {mode === 'login' ? 'Sign in' : 'Create account'}
+                    {mode === 'login' ? t('auth.btnSignIn') : t('auth.btnCreate')}
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </button>
 
               <p className="text-center text-sm text-slate-400">
-                {mode === 'login' ? "New here? " : 'Already exploring? '}
+                {mode === 'login' ? t('auth.switchToRegister') : t('auth.switchToLogin')}
                 <button
                   type="button"
                   onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
                   className="font-medium text-teal-300 underline-offset-4 hover:underline"
                 >
-                  {mode === 'login' ? 'Create an account' : 'Sign in instead'}
+                  {mode === 'login' ? t('auth.switchToRegisterLink') : t('auth.switchToLoginLink')}
                 </button>
               </p>
             </motion.form>
