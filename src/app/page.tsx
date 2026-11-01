@@ -211,8 +211,8 @@ export default function LandingPage() {
             {demoLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
             {t('landing.finalCtaDemo')}
           </button>
-          <Link href="/app" className="btn-secondary px-6 py-3 text-base">
-            {t('common.signIn')}
+          <Link href="/pricing" className="btn-secondary px-6 py-3 text-base">
+            {t('landing.ctaPricing')}
           </Link>
         </motion.div>
       </section>

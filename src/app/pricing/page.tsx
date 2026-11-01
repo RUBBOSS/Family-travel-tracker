@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check, Compass } from 'lucide-react';
@@ -9,41 +8,12 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/context/LanguageContext';
 import { fadeUp, staggerContainer } from '@/lib/motion';
 
-interface Tier {
-  key: 'family' | 'pro' | 'agency';
-  highlighted?: boolean;
-  features: string[];
-}
+const CONTACT_URL = process.env.NEXT_PUBLIC_CONTACT_URL || 'mailto:your@agency.com?subject=Family%20Travel%20Tracker%20license';
 
-const TIERS: Tier[] = [
-  {
-    key: 'family',
-    features: ['feature1', 'feature2', 'feature3', 'feature4', 'feature5'],
-  },
-  {
-    key: 'pro',
-    highlighted: true,
-    features: ['featurePro1', 'featurePro2', 'feature4', 'feature5', 'featurePro3'],
-  },
-  {
-    key: 'agency',
-    features: ['featureAgency1', 'featureAgency2', 'featureAgency3'],
-  },
-];
+const INCLUDES = ['featureAgency2', 'inclSource', 'inclDeploy', 'feature1', 'feature4', 'feature5'] as const;
 
 export default function PricingPage() {
   const { t } = useLanguage();
-  const [checkoutUrls, setCheckoutUrls] = useState<{ family: string | null; pro: string | null; agency: string | null }>({
-    family: null, pro: null, agency: null,
-  });
-
-  // The Whop checkout links are configured per deployment (staged: null -> 'soon')
-  useEffect(() => {
-    fetch('/api/license/validate')
-      .then(r => r.json())
-      .then(data => setCheckoutUrls(data.checkoutUrls ?? { family: null, pro: null, agency: null }))
-      .catch(() => setCheckoutUrls({ family: null, pro: null, agency: null }));
-  }, []);
 
   return (
     <main className="relative min-h-screen overflow-x-hidden pb-20">
@@ -65,7 +35,7 @@ export default function PricingPage() {
       </header>
 
       <motion.section
-        className="mx-auto max-w-6xl px-4 pt-10 sm:px-6"
+        className="mx-auto max-w-3xl px-4 pt-10 sm:px-6"
         variants={staggerContainer(0.1)}
         initial="hidden"
         animate="visible"
@@ -80,62 +50,47 @@ export default function PricingPage() {
           {t('pricing.subtitle')}
         </motion.p>
 
-        <div className="mt-14 grid gap-6 lg:grid-cols-3">
-          {TIERS.map(tier => {
-            const name = t(`pricing.${tier.key}Name`);
-            const price = t(`pricing.${tier.key}Price`);
-            const desc = t(`pricing.${tier.key}Desc`);
-            return (
-              <motion.div
-                key={tier.key}
-                variants={fadeUp}
-                whileHover={{ y: -4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-                className={`relative flex flex-col rounded-3xl border p-7 ${
-                  tier.highlighted
-                    ? 'border-teal-400/40 bg-gradient-to-b from-teal-400/10 to-slate-900/60 shadow-[0_24px_80px_-24px_rgba(45,212,191,0.35)]'
-                    : 'border-white/10 bg-slate-900/60'
-                }`}
-              >
-                <h2 className="font-display text-lg font-semibold text-white">{name}</h2>
-                <p className="mt-4">
-                  <span className="font-display text-4xl font-bold text-white">{tier.key === 'family' ? '$29' : tier.key === 'pro' ? '$9' : '$49'}</span>
-                  <span className="ml-2 text-sm text-slate-400">{price}</span>
-                </p>
-                <p className="mt-3 text-sm leading-relaxed text-slate-400">{desc}</p>
+        <motion.div
+          variants={fadeUp}
+          className="mt-12 rounded-3xl border border-teal-400/40 bg-gradient-to-b from-teal-400/10 to-slate-900/60 p-8 shadow-[0_24px_80px_-24px_rgba(45,212,191,0.35)] sm:p-10"
+        >
+          <h2 className="font-display text-xl font-semibold text-white">
+            {t('pricing.agencyLicenseName')}
+          </h2>
+          <p className="mt-4">
+            <span className="font-display text-5xl font-bold text-white">$100</span>
+            <span className="ml-3 text-sm text-slate-400">{t('pricing.agencyLicensePrice')}</span>
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-slate-300">
+            {t('pricing.agencyLicenseDesc')}
+          </p>
 
-                <ul className="mt-6 flex-1 space-y-2.5">
-                  {tier.features.map(f => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm text-slate-300">
-                      <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-teal-300" />
-                      {t(`pricing.${f}`)}
-                    </li>
-                  ))}
-                </ul>
+          <ul className="mt-7 space-y-3">
+            {INCLUDES.map(key => (
+              <li key={key} className="flex items-start gap-3 text-sm text-slate-200">
+                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-teal-300" />
+                {t(`pricing.${key}`)}
+              </li>
+            ))}
+          </ul>
 
-                {checkoutUrls[tier.key] ? (
-                  <a
-                    href={checkoutUrls[tier.key] as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`mt-7 w-full py-2.5 ${tier.highlighted ? 'btn-primary' : 'btn-secondary'}`}
-                  >
-                    {t('pricing.cta')}
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                ) : (
-                  <button disabled className="btn-secondary mt-7 w-full py-2.5 opacity-60">
-                    {t('pricing.ctaSoon')}
-                  </button>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
+          <a
+            href={CONTACT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary mt-9 w-full py-3 text-base"
+          >
+            {t('pricing.cta')}
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </motion.div>
 
-        <p className="mt-12 text-center text-sm text-slate-500">
-          {t('landing.heroSubtitle')}
-        </p>
+        <motion.p variants={fadeUp} className="mt-10 text-center text-sm text-slate-400">
+          {t('landing.ctaDemo')} →{' '}
+          <Link href="/app" className="font-medium text-teal-300 underline-offset-4 hover:underline">
+            {t('landing.ctaOpenApp')}
+          </Link>
+        </motion.p>
       </motion.section>
     </main>
   );
