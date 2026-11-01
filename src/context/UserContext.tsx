@@ -11,6 +11,10 @@ export interface UserProfile {
   full_name: string;
   avatar_color: string;
   email?: string;
+  /** Agency Studio branding (from auth user_metadata / profile columns) */
+  agency_name?: string | null;
+  agency_logo_url?: string | null;
+  agency_color?: string | null;
 }
 
 // Define the type for the context value
@@ -88,8 +92,29 @@ export function UserProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      // The profiles table has no email column — carry it from the auth user
-      return { ...profile, email: authUser.email || undefined };
+      // The profiles table has no email column — carry it from the auth user.
+      // Agency branding lives in user_metadata (always available) and, once
+      // migration-3 is applied, is mirrored into user_profiles columns.
+      const meta = (authUser.user_metadata ?? {}) as Record<string, unknown>;
+      const agencyBranding = {
+        agency_name:
+          (profile.agency_name as string | null | undefined) ??
+          (meta.agency_name as string | undefined) ??
+          null,
+        agency_logo_url:
+          (profile.agency_logo_url as string | null | undefined) ??
+          (meta.agency_logo_url as string | undefined) ??
+          null,
+        agency_color:
+          (profile.agency_color as string | null | undefined) ??
+          (meta.agency_color as string | undefined) ??
+          null,
+      };
+      return {
+        ...profile,
+        email: authUser.email || undefined,
+        ...agencyBranding,
+      };
     } catch (err) {
       console.error('Error in fetchUserProfile:', err);
       return null;

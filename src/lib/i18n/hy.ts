@@ -151,6 +151,7 @@ export const hy: Dictionary = {
   'bucket.wentThereTitle': 'Նշել ուղևորությունը որպես կատարված',
 
   // Share page
+  'share.clientOf': 'Գործակալության հաճախորդի ճամփորդություն',
   'share.makeYourOwn': 'Ստեղծեք ձեր քարտեզը',
   'share.headline': '{n} երկիր։ Մեկ ընտանիք։',
   'share.subtitle': 'Աշխարհի {p}%-ը ուսումնասիրված է միասին',
@@ -202,6 +203,32 @@ export const hy: Dictionary = {
   'pricing.featureAgency1': 'Ամեն ինչ Pro-ից',
   'pricing.featureAgency2': 'White-label՝ ձեր լոգոն ու գույները',
   'pricing.featureAgency3': 'Ելակետային կոդի արտոնագիր՝ հաճախորդների համար տեղակայելու',
+
+
+  // Agency Studio
+  'studio.title': 'Գործակալության ստուդիա',
+  'studio.subtitle': 'Հագցրեք ձեր բրենդը այն արտադրանքին, որ տեսնում են հաճախորդները՝ անունը, լոգոտիպը և շեշտային գույնը կերևան հավելվածում և ամեն հրապարակային էջում։',
+  'studio.back': 'Կարտեզ',
+  'studio.nameLabel': 'Գործակալության անուն',
+  'studio.namePlaceholder': 'Skyline Travel',
+  'studio.nameHint': 'Երևում է քարտեզի կողքին և հրապարակային էջերում։',
+  'studio.logoLabel': 'Լոգոտիպի հղում',
+  'studio.logoHint': 'Լավագույնը քառակուսի PNG/SVG է (օր.՝ վերբեռնված ձեր կայքում)։',
+  'studio.logoInvalid': 'Օգտագործեք ամբողջական https:// հղում նկարին։',
+  'studio.colorLabel': 'Շեշտային գույն',
+  'studio.colorCustom': 'Սեփական գույն',
+  'studio.preview': 'Նախադիտում — այսպես տեսնում են հաճախորդները',
+  'studio.previewNameFallback': 'Ձեր գործակալության անունը',
+  'studio.previewTagline': 'Ճամփորդությունները՝ մեկ քարտեզի վրա։',
+  'studio.save': 'Պահպանել բրենդը',
+  'studio.saved': 'Բրենդը պահպանվեց։',
+  'studio.onboardTitle': 'Հաճախորդ ընտանիքի կապում',
+  'studio.onboardStep1': 'Բացեք հավելվածը գաղտնի պատուհանում և ստեղծեք հաշիվ հաճախորդի անունով (մեկ հաշիվ = մեկ ընտանիք)։',
+  'studio.onboardStep2': 'Ավելացրեք ընտանիքի անդամներին և առաջին ուղևորությունները միասին — հինգ րոպե է, և նվերը դառնում է անհատական։',
+  'studio.onboardStep3': 'Հանձնեք մուտքը հաճախորդին կամ կառավարեք ինքներդ ուղևորության ընթացքում։',
+  'studio.onboardStep4': 'Ուղարկեք ընտանիքին իրենց հրապարակային հղումը — ամեն այց գովազդում է ձեր գործակալությունը։',
+  'studio.copied': 'Հղումը պատճենվեց։',
+  'studio.copyLink': 'Պատճենել հաճախորդի գրանցման հղումը',
 
   // Language switcher
   'lang.aria': 'Փոխել լեզուն',

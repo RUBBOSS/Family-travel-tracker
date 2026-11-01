@@ -150,6 +150,7 @@ export const en = {
   'bucket.wentThereTitle': 'Log this trip as visited',
 
   // Share page
+  'share.clientOf': 'A client journey by',
   'share.makeYourOwn': 'Make your own map',
   'share.headline': '{n} countries. One family.',
   'share.subtitle': '{p}% of the world explored together',
@@ -201,6 +202,32 @@ export const en = {
   'pricing.featureAgency1': 'Everything in Pro',
   'pricing.featureAgency2': 'White-label: your logo, your colors',
   'pricing.featureAgency3': 'Source code license for client deployments',
+
+
+  // Agency Studio
+  'studio.title': 'Agency Studio',
+  'studio.subtitle': 'Put your brand on the product your clients see: name, logo and accent color appear in the app and on every share page.',
+  'studio.back': 'Back to map',
+  'studio.nameLabel': 'Agency name',
+  'studio.namePlaceholder': 'Skyline Travel',
+  'studio.nameHint': 'Shown next to the map and on your public pages.',
+  'studio.logoLabel': 'Logo URL',
+  'studio.logoHint': 'A square PNG/SVG works best (e.g. uploaded to your website).',
+  'studio.logoInvalid': 'Use a full https:// link to an image.',
+  'studio.colorLabel': 'Accent color',
+  'studio.colorCustom': 'Custom color',
+  'studio.preview': 'Preview — this is what clients see',
+  'studio.previewNameFallback': 'Your agency name',
+  'studio.previewTagline': 'Travel, mapped together.',
+  'studio.save': 'Save branding',
+  'studio.saved': 'Branding saved!',
+  'studio.onboardTitle': 'Onboarding a client family',
+  'studio.onboardStep1': 'Open the app in a private window and create an account in the client’s name (one account = one client family).',
+  'studio.onboardStep2': 'Add the family members and their first trips together — it takes five minutes and makes the gift feel personal.',
+  'studio.onboardStep3': 'Hand over the login, or keep managing it yourself during the trip.',
+  'studio.onboardStep4': 'Send the family their public share link — every visit to it markets your agency.',
+  'studio.copied': 'Link copied!',
+  'studio.copyLink': 'Copy the client signup link',
 
   // Language switcher
   'lang.aria': 'Change language',

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'usehooks-ts';
-import { Globe2, LogOut, Plus, Share2 } from 'lucide-react';
+import { Building2, Globe2, LogOut, Plus, Share2 } from 'lucide-react';
 import WorldMap, { MapVisit } from '@/components/WorldMap/WorldMap';
 import FamilyMemberTabs from '@/components/FamilyMemberTabs';
 import CountrySearch from '@/components/CountrySearch';
@@ -225,13 +225,26 @@ export default function TrackerPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 md:py-4">
             <Link href="/" className="flex items-center space-x-2 sm:space-x-3 min-w-0 group">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-400/15 text-teal-300 ring-1 ring-teal-400/30 transition-colors group-hover:bg-teal-400/25">
-                <Globe2 className="h-5 w-5" />
-              </span>
+              {currentUser.agency_logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={currentUser.agency_logo_url}
+                  alt=""
+                  className="h-9 w-9 flex-shrink-0 rounded-xl object-contain ring-1 ring-white/10"
+                />
+              ) : (
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-400/15 text-teal-300 ring-1 ring-teal-400/30 transition-colors group-hover:bg-teal-400/25">
+                  <Globe2 className="h-5 w-5" />
+                </span>
+              )}
               <div className="min-w-0">
                 <h1 className="truncate font-display text-base sm:text-lg font-semibold tracking-tight text-white">
-                  <span className="hidden sm:inline">{t('tracker.appTitle')}</span>
-                  <span className="sm:hidden">{t('tracker.appTitleShort')}</span>
+                  {currentUser.agency_name || (
+                    <>
+                      <span className="hidden sm:inline">{t('tracker.appTitle')}</span>
+                      <span className="sm:hidden">{t('tracker.appTitleShort')}</span>
+                    </>
+                  )}
                 </h1>
               </div>
             </Link>
@@ -248,6 +261,10 @@ export default function TrackerPage() {
                 {currentUser.username.charAt(0).toUpperCase()}
               </div>
               <LanguageSwitcher />
+              <Link href="/studio" className="btn-ghost" title={t('studio.title')}>
+                <Building2 size={15} />
+                <span className="hidden md:inline">{t('studio.title')}</span>
+              </Link>
               <button onClick={handleSignOut} className="btn-ghost" aria-label={t('common.signOut')}>
                 <LogOut size={15} />
                 <span className="hidden sm:inline">{t('common.signOut')}</span>

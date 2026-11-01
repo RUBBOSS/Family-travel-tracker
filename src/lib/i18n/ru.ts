@@ -151,6 +151,7 @@ export const ru: Dictionary = {
   'bucket.wentThereTitle': 'Отметить поездку как состоявшуюся',
 
   // Share page
+  'share.clientOf': 'Путешествие клиента агентства',
   'share.makeYourOwn': 'Создайте свою карту',
   'share.headline': '{n} стран. Одна семья.',
   'share.subtitle': '{p}% мира исследовано вместе',
@@ -202,6 +203,32 @@ export const ru: Dictionary = {
   'pricing.featureAgency1': 'Всё из тарифа Pro',
   'pricing.featureAgency2': 'White-label: ваш логотип и цвета',
   'pricing.featureAgency3': 'Лицензия на исходный код для развёртывания клиентам',
+
+
+  // Agency Studio
+  'studio.title': 'Кабинет агентства',
+  'studio.subtitle': 'Наденьте свой бренд на продукт, который видят клиенты: имя, логотип и акцентный цвет появятся в приложении и на каждой странице шаринга.',
+  'studio.back': 'К карте',
+  'studio.nameLabel': 'Название агентства',
+  'studio.namePlaceholder': 'Skyline Travel',
+  'studio.nameHint': 'Отображается рядом с картой и на публичных страницах.',
+  'studio.logoLabel': 'Ссылка на логотип',
+  'studio.logoHint': 'Лучше всего квадратный PNG/SVG (например, загруженный на ваш сайт).',
+  'studio.logoInvalid': 'Используйте полную ссылку https:// на изображение.',
+  'studio.colorLabel': 'Акцентный цвет',
+  'studio.colorCustom': 'Свой цвет',
+  'studio.preview': 'Превью — так это видят клиенты',
+  'studio.previewNameFallback': 'Название вашего агентства',
+  'studio.previewTagline': 'Путешествия на одной карте.',
+  'studio.save': 'Сохранить бренд',
+  'studio.saved': 'Бренд сохранён!',
+  'studio.onboardTitle': 'Подключение семьи клиента',
+  'studio.onboardStep1': 'Откройте приложение в приватном окне и создайте аккаунт на имя клиента (один аккаунт = одна семья клиента).',
+  'studio.onboardStep2': 'Добавьте членов семьи и первые поездки вместе — это пять минут, и подарок становится личным.',
+  'studio.onboardStep3': 'Передайте логин клиенту или управляйте сами во время поездки.',
+  'studio.onboardStep4': 'Отправьте семье их публичную ссылку — каждый визит по ней рекламирует ваше агентство.',
+  'studio.copied': 'Ссылка скопирована!',
+  'studio.copyLink': 'Скопировать ссылку для клиента',
 
   // Language switcher
   'lang.aria': 'Сменить язык',

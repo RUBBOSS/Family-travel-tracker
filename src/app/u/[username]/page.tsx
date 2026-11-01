@@ -20,7 +20,14 @@ const WorldMapSvg = dynamic(() => import('@/components/WorldMap/WorldMapSvg'), {
 });
 
 interface PublicMapData {
-  profile: { username: string; fullName: string; avatarColor: string };
+  profile: {
+    username: string;
+    fullName: string;
+    avatarColor: string;
+    agencyName?: string | null;
+    agencyLogoUrl?: string | null;
+    agencyColor?: string | null;
+  };
   visits: Array<{
     countryCode: string;
     countryName: string;
@@ -114,15 +121,35 @@ export default function PublicMapPage({ params }: { params: Promise<{ username: 
       {/* Header */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 sm:px-6">
         <div className="flex items-center gap-3">
-          <span
-            className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-slate-950"
-            style={{ backgroundColor: profile.avatarColor }}
-          >
-            {profile.username.charAt(0).toUpperCase()}
-          </span>
+          {profile.agencyLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.agencyLogoUrl}
+              alt=""
+              className="h-10 w-10 rounded-xl object-contain ring-1 ring-white/10"
+            />
+          ) : (
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-slate-950"
+              style={{ backgroundColor: profile.agencyColor || profile.avatarColor }}
+            >
+              {profile.username.charAt(0).toUpperCase()}
+            </span>
+          )}
           <div>
-            <p className="font-display text-lg font-semibold leading-tight text-white">{profile.fullName || profile.username}</p>
-            <p className="text-xs text-slate-400">@{profile.username}</p>
+            {profile.agencyName ? (
+              <>
+                <p className="font-display text-lg font-semibold leading-tight text-white">{profile.agencyName}</p>
+                <p className="text-xs text-slate-400">
+                  {t('share.clientOf')} @{profile.username}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-display text-lg font-semibold leading-tight text-white">{profile.fullName || profile.username}</p>
+                <p className="text-xs text-slate-400">@{profile.username}</p>
+              </>
+            )}
           </div>
         </div>
         <LanguageSwitcher />
