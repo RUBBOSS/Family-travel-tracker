@@ -1,177 +1,225 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FamilyMemberWithMeta } from '@/hooks/useFamilyMembers';
-
-// Define the types locally to avoid circular dependencies
-type UserStats = {
-  id: number;
-  name: string;
-  color: string;
-  countriesVisited: number;
-};
-
-type CountryStats = {
-  id: number;
-  countryName: string;
-  countryCode: string;
-  visitors: number;
-};
-
-type TopTraveler = {
-  userId?: number;
-  name: string;
-  color?: string;
-  visits: number;
-};
-
-type MostVisitedCountry = {
-  countryId?: number;
-  countryName: string;
-  countryCode?: string;
-  visitors: number;
-};
-
-type Stats = {
-  general: {
-    totalCountries: number;
-    totalUsers: number;
-    totalVisits: number;
-    topTraveler: TopTraveler;
-    mostVisitedCountry: MostVisitedCountry;
-  };
-  users: UserStats[];
-  topCountries: CountryStats[];
-};
+import { AlertCircle, Award, Trophy, Users } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { useCountUp } from '@/hooks/useCountUp';
+import { Stats } from '@/hooks/useStats';
+import { UserProfile } from '@/context/UserContext';
+import { fadeUp, staggerContainer } from '@/lib/motion';
 
 interface StatsOverviewProps {
   stats: Stats | null;
   isLoading: boolean;
   error: string | null;
   selectedFamilyMemberId?: number | null;
-  familyMembers?: FamilyMemberWithMeta[];
+  familyMembers?: any[];
   selectedMemberVisitedCount?: number;
-  currentUser?: { username?: string } | null;
+  currentUser?: UserProfile | null;
 }
 
-export default function StatsOverview({ 
-  stats, 
-  isLoading, 
-  error, 
-  selectedFamilyMemberId, 
-  familyMembers = [],
+function AnimatedNumber({ value, decimals = 0 }: { value: number; decimals?: number }) {
+  return (
+    <span className="tabular-nums">
+      {value.toFixed(decimals)}
+    </span>
+  );
+}
+
+/** Progress ring showing % of the world visited. */
+function WorldRing({ percent, ofWorldLabel }: { percent: number; ofWorldLabel: string }) {
+  const size = 132;
+  const stroke = 10;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.min(100, Math.max(0, percent));
+
+  return (
+    <div className="relative h-[132px] w-[132px]" role="img" aria-label={`${clamped.toFixed(1)} percent of the world visited`}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+        <motion.circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="url(#ringGradient)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: circumference * (1 - clamped / 100) }}
+          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+        />
+        <defs>
+          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#2dd4bf" />
+            <stop offset="100%" stopColor="#a78bfa" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-display text-2xl font-bold text-white">
+          <AnimatedNumber value={clamped} decimals={1} />%
+        </span>
+        <span className="text-[11px] uppercase tracking-wider text-slate-400">{ofWorldLabel}</span>
+      </div>
+    </div>
+  );
+}
+
+export default function StatsOverview({
+  stats,
+  isLoading,
+  error,
+  selectedFamilyMemberId,
+  familyMembers,
   selectedMemberVisitedCount = 0,
-  currentUser
+  currentUser,
 }: StatsOverviewProps) {
-  
+  const { t } = useLanguage();
+  const [started, setStarted] = useState(false);
+  useEffect(() => {
+    if (!isLoading && stats) setStarted(true);
+  }, [isLoading, stats]);
+
+  const totalVisits = useCountUp(stats?.general.totalVisits ?? 0, started);
+  const totalMembers = useCountUp(stats?.general.totalUsers ?? 0, started);
+  const percent = stats && stats.general.totalCountries > 0
+    ? (stats.general.totalVisits / stats.general.totalCountries) * 100
+    : 0;
+
   if (isLoading) {
-    return <StatsCardSkeleton />;
-  }
-  
-  if (error || !stats) {
     return (
-      <section className="text-center py-6 bg-red-500/10 border border-red-300 rounded-lg">
-        <p className="text-red-400">Failed to load statistics</p>
-      </section>
+      <div className="surface-card p-6" aria-busy="true" aria-label="Loading stats">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+          <div className="flex-1 space-y-4">
+            <div className="h-8 w-48 animate-shimmer rounded-lg" />
+            <div className="h-12 w-72 animate-shimmer rounded-lg" />
+          </div>
+          <div className="h-[132px] w-[132px] animate-shimmer rounded-full" />
+        </div>
+      </div>
     );
   }
-  
-  const { general } = stats;
-    // Determine which stats to show based on selection
-  const selectedMember = selectedFamilyMemberId 
-    ? familyMembers.find(m => m.id === selectedFamilyMemberId)
-    : null;
-      const displayStats = {
-    totalCountries: general.totalCountries,
-    totalUsers: general.totalUsers,
-    totalVisits: selectedMemberVisitedCount,
-    topTraveler: general.topTraveler
-  };
-  
-  return (
-    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-      <StatsCard
-        title="Total Countries"
-        value={displayStats.totalCountries}
-        icon="🌎"
-        color="from-blue-500 to-blue-600"
-        delay={0.1}
-      />
-      
-      <StatsCard
-        title="Family Members"
-        value={displayStats.totalUsers}
-        icon="👨‍👩‍👧‍👦"
-        color="from-green-500 to-green-600"
-        delay={0.2}
-      />
-        <StatsCard
-        title={selectedMember ? `${selectedMember.name}'s Visits` : currentUser ? `${currentUser.username}'s Visits` : "Total Visits"}
-        value={displayStats.totalVisits}
-        icon="✈️"
-        color="from-purple-500 to-purple-600"
-        delay={0.3}
-      />
-        <StatsCard
-        title="Top Traveler"
-        value={displayStats.topTraveler.name}
-        subtitle={`${displayStats.topTraveler.visits} countries`}
-        icon="🏆"
-        color="from-amber-500 to-amber-600"
-        delay={0.4}
-      />
-    </section>
-  );
-}
 
-function StatsCard({ 
-  title, 
-  value, 
-  subtitle, 
-  icon, 
-  color,
-  delay
-}: { 
-  title: string; 
-  value: number | string; 
-  subtitle?: string; 
-  icon: string;
-  color: string;
-  delay: number;
-}) {
+  if (error) {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-300">
+        <AlertCircle className="h-5 w-5 flex-shrink-0" />
+        <p>{t('stats.error', { error })}</p>
+      </div>
+    );
+  }
+
+  if (!stats) return null;
+
+  const { general, users, regions } = stats;
+
+  // Leaderboard: personal visits + each member, sorted by count
+  const memberTotal = users.reduce((sum, u) => sum + u.countriesVisited, 0);
+  const personalCount = Math.max(0, general.totalVisits - memberTotal);
+  const travelers = [
+    ...(personalCount > 0 && currentUser ? [{
+      id: 'you',
+      name: t('stats.youName', { name: currentUser.username }),
+      color: currentUser.avatar_color || '#6366f1',
+      count: personalCount,
+    }] : []),
+    ...users
+      .filter(u => u.countriesVisited > 0)
+      .map(u => ({ id: u.id, name: u.name, color: u.color, count: u.countriesVisited })),
+  ].sort((a, b) => b.count - a.count);
+  const maxCount = travelers[0]?.count || 1;
+
+  const selectedMember = selectedFamilyMemberId != null
+    ? familyMembers?.find((m: any) => m.id === selectedFamilyMemberId)
+    : null;
+
   return (
-    <motion.div 
-      className={`bg-gradient-to-br ${color} rounded-xl p-6 text-white shadow-lg`}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay }}
+    <motion.section
+      variants={staggerContainer(0.08)}
+      initial="hidden"
+      animate="visible"
+      className="surface-card p-6 sm:p-8"
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-white/80 font-medium">{title}</p>
-          <p className="text-3xl font-bold mt-1">{value}</p>
-          {subtitle && (
-            <p className="text-sm text-white/80 mt-1">{subtitle}</p>
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
+        {/* Left: headline numbers + leaderboard */}
+        <div className="flex-1 space-y-8">
+          <motion.div variants={fadeUp}>
+            <h2 className="font-display text-sm font-medium uppercase tracking-widest text-slate-400">
+              {selectedMember ? t('stats.memberJourney', { name: selectedMember.name }) : t('stats.journey')}
+            </h2>
+            <p className="mt-2 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
+              <AnimatedNumber value={selectedMember ? selectedMemberVisitedCount : totalVisits} />
+              <span className="ml-3 text-lg font-medium text-slate-400">
+                {selectedMember
+                  ? t('stats.ofFamilyTotal', { n: general.totalCountries })
+                  : t('stats.countriesVisited')}
+              </span>
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-slate-400">
+              <span className="inline-flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" /> {Math.round(totalMembers)} {t('stats.explorers', { n: Math.round(totalMembers) })}
+              </span>
+              {general.mostVisitedCountry.countryId != null && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Trophy className="h-3.5 w-3.5 text-amber-300" />
+                  {general.mostVisitedCountry.countryName}
+                </span>
+              )}
+            </div>
+          </motion.div>
+
+          {travelers.length > 0 && (
+            <motion.div variants={fadeUp} className="space-y-3">
+              <h3 className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                <Award className="h-4 w-4 text-teal-300" /> {t('stats.leaderboard')}
+              </h3>
+              <div className="space-y-2.5">
+                {travelers.map((t, i) => (
+                  <div key={t.id} className="flex items-center gap-3">
+                    <span className="w-28 truncate text-sm text-slate-300 sm:w-36">{t.name}</span>
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/5">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: t.color }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(t.count / maxCount) * 100}%` }}
+                        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.4 + i * 0.1 }}
+                      />
+                    </div>
+                    <span className="w-8 text-right text-sm font-semibold tabular-nums text-white">{t.count}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           )}
         </div>
-        <div className="text-4xl opacity-80">{icon}</div>
-      </div>
-    </motion.div>
-  );
-}
 
-function StatsCardSkeleton() {
-  return (
-    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-      {[...Array(4)].map((_, i) => (
-        <div 
-          key={i} 
-          className="bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl p-6 animate-pulse"
-        >
-          <div className="h-5 w-24 bg-slate-600 rounded mb-3"></div>
-          <div className="h-8 w-16 bg-slate-600 rounded"></div>
-        </div>
-      ))}
-    </section>
+        {/* Right: ring + regions */}
+        <motion.div variants={fadeUp} className="flex flex-col items-center gap-6 lg:w-64">
+          <WorldRing percent={percent} ofWorldLabel={t('stats.ofWorld')} />
+          {regions && regions.length > 0 && (
+            <div className="flex w-full flex-wrap justify-center gap-1.5 lg:justify-start">
+              {regions
+                .filter(r => r.visitedInRegion > 0)
+                .sort((a, b) => b.visitedInRegion - a.visitedInRegion)
+                .map(r => (
+                  <span
+                    key={r.region}
+                    className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300"
+                    title={`${r.visitedInRegion} of ${r.totalInRegion} countries in ${r.region}`}
+                  >
+                    {r.region} <span className="font-semibold text-teal-300 tabular-nums">{r.visitedInRegion}</span>
+                    <span className="text-slate-500">/{r.totalInRegion}</span>
+                  </span>
+                ))}
+            </div>
+          )}
+        </motion.div>
+      </div>
+    </motion.section>
   );
 }

@@ -1,92 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/utils/supabaseServerClient';
+import { getUserFromRequest, unauthorized } from '@/utils/apiAuth';
 
-// Helper to get user from Supabase JWT
-async function getUserFromRequest(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Invalid or missing auth header');
-      return null;
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    
-    if (!token) return null;
-
-    // Verify we have the required environment variables at runtime
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Missing required Supabase environment variables');
-      return null;
-    }
-    
-    // Use a try-catch specifically for getUser to handle AuthSessionMissingError
-    try {
-      const { data, error } = await supabaseServer.auth.getUser(token);
-      
-      if (error) {
-        // Handle AuthSessionMissingError gracefully
-        if (error.name === 'AuthSessionMissingError' || error.message?.includes('Auth session missing')) {
-          console.log('No active session found');
-          return null;
-        }
-        console.error('Auth error:', error);
-        return null;
-      }
-      
-      return data?.user || null;
-    } catch (e) {
-      console.error('Error getting user:', e);
-      return null;
-    }
-  } catch (e) {
-    console.error('Error in getUserFromRequest:', e);
-    return null;
-  }
-}
-
+// GET /api/stats - Aggregated stats for the authenticated user.
+// Response shape is consumed by src/hooks/useStats.ts — keep it stable.
 export async function GET(request: NextRequest) {
-  console.log('Stats API called');
-  
+  const auth = await getUserFromRequest(request);
+  if (!auth) return unauthorized();
+  const { user, supabase } = auth;
+
   try {
-    // First validate user is authenticated
-    const user = await getUserFromRequest(request);
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    console.log('Fetching stats for user:', user.id);
-      // Query Supabase for real data
     const [
       countryCountResult,
-      familyMemberCountResult,
-      visitCountResult,
-      topTravelerResult,
-      mostVisitedCountryResult,
-      userStatsResult,
-      topCountriesResult
+      familyMembersResult,
+      visitsResult,
+      topCountriesResult,
+      regionsResult
     ] = await Promise.all([
       // Total countries in the system
-      supabaseServer.from('countries').select('id', { count: 'exact', head: true }),      // Total family members for current user
-      supabaseServer.from('family_members')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id),
-      
-      // Total visits for current user's family members
-      supabaseServer.from('visited_countries')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id),      // Top traveler among current user's family members
-      supabaseServer.from('family_members')
-        .select(`
-          id,
-          name,
-          avatar_color
-        `)
-        .eq('user_id', user.id),
-      
-      // Most visited country
-      supabaseServer.from('countries')
+      supabase.from('countries').select('id', { count: 'exact', head: true }),
+
+      // Family members for current user (RLS-scoped)
+      supabase.from('family_members').select('id, name, avatar_color'),
+
+      // All visit rows for the user — one query, counted in memory
+      supabase.from('visited_countries').select('id, family_member_id, country_id, countries (country_name, country_code)'),
+
+      // Top countries by visitor count across all users (public aggregate)
+      supabase.from('countries')
         .select(`
           id,
           country_name,
@@ -94,153 +34,112 @@ export async function GET(request: NextRequest) {
           visitor_count:visited_countries(count)
         `)
         .order('visitor_count', { ascending: false })
-        .limit(1)
-        .single(),        // Family member stats
-      supabaseServer.from('family_members')
-        .select(`
-          id,
-          name,
-          avatar_color,
-          visited_count:visited_countries(count)
-        `)
-        .eq('user_id', user.id)
-        .order('visited_count', { ascending: false }),
-        
-      // Top countries
-      supabaseServer.from('countries')
-        .select(`
-          id,
-          country_name,
-          country_code,
-          visitor_count:visited_countries(count)
-        `)
-        .order('visitor_count', { ascending: false })
-        .limit(10)
-    ]);    // Process results
+        .limit(10),
+
+    // Continent/region breakdown for the caller (SECURITY DEFINER RPC, pre-existing)
+    supabase.rpc('get_user_countries_by_region', { user_uuid: user.id })
+      .then(({ data, error }: { data: any; error: any }) => {
+        if (error) {
+          console.error('Region RPC failed:', error.message);
+          return [];
+        }
+        return (data || []).map((r: any) => ({
+          region: r.region,
+          totalInRegion: Number(r.total_in_region || 0),
+          visitedInRegion: Number(r.visited_in_region || 0),
+        }));
+      })
+    ]);
+
     const totalCountries = countryCountResult.count || 0;
-    const totalFamilyMembers = familyMemberCountResult.count || 0;
-    const totalVisits = visitCountResult.count || 0;    // Get family members and calculate their visit counts manually
-    let topTraveler: any = {
+    const familyMembers = familyMembersResult.data || [];
+    const visits = visitsResult.data || [];
+
+    // Count visits per family member + personal visits in memory
+    const personalVisits = visits.filter(v => v.family_member_id === null).length;
+    const visitsByMember = new Map<number, number>();
+    for (const visit of visits) {
+      if (visit.family_member_id !== null) {
+        visitsByMember.set(visit.family_member_id, (visitsByMember.get(visit.family_member_id) || 0) + 1);
+      }
+    }
+
+    // Build the travelers list (personal + each member with visits)
+    const allTravelers: { id: string | number; name: string; avatar_color?: string; visitCount: number }[] = [];
+    if (personalVisits > 0) {
+      allTravelers.push({ id: user.id, name: 'You', avatar_color: '#6366f1', visitCount: personalVisits });
+    }
+    for (const member of familyMembers) {
+      const count = visitsByMember.get(member.id) || 0;
+      if (count > 0) {
+        allTravelers.push({ id: member.id, name: member.name, avatar_color: member.avatar_color, visitCount: count });
+      }
+    }
+
+    let topTraveler: { name: string; visits: number; userId?: string | number; color?: string } = {
       name: 'No travelers yet',
       visits: 0
     };
-
-    // Always check current user's personal visits (family_member_id = null)
-    const { count: userPersonalVisits } = await supabaseServer
-      .from('visited_countries')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .is('family_member_id', null);
-
-    let allTravelers = [];
-
-    // Add current user's personal visits
-    if (userPersonalVisits && userPersonalVisits > 0) {
-      allTravelers.push({
-        id: user.id,
-        name: 'You',
-        avatar_color: '#6366f1',
-        visitCount: userPersonalVisits
-      });
-    }
-
-    // Add family members and their visit counts if they exist
-    if (topTravelerResult.data && topTravelerResult.data.length > 0) {
-      const familyMemberVisitCounts = await Promise.all(
-        topTravelerResult.data.map(async (member: any) => {
-          const { count } = await supabaseServer
-            .from('visited_countries')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('family_member_id', member.id);
-          
-          return {
-            ...member,
-            visitCount: count || 0
-          };
-        })
-      );
-
-      // Add family members with visits > 0
-      allTravelers.push(...familyMemberVisitCounts.filter(member => member.visitCount > 0));
-    }
-
-    // Find the traveler with the most visits
     if (allTravelers.length > 0) {
-      const topTravelerData = allTravelers.reduce((max, current) => 
+      const top = allTravelers.reduce((max, current) =>
         current.visitCount > max.visitCount ? current : max
       );
-
-      topTraveler = {
-        name: topTravelerData.name,
-        visits: topTravelerData.visitCount,
-        userId: topTravelerData.id,
-        color: topTravelerData.avatar_color
-      };
+      topTraveler = { name: top.name, visits: top.visitCount, userId: top.id, color: top.avatar_color };
     }
-    
-    // Format the most visited country
-    const mostVisitedCountry = mostVisitedCountryResult.data
-      ? {
-          countryId: mostVisitedCountryResult.data.id,
-          countryName: mostVisitedCountryResult.data.country_name,
-          countryCode: mostVisitedCountryResult.data.country_code,
-          visitors: mostVisitedCountryResult.data.visitor_count
-        }
-      : {
-          countryName: 'No countries visited yet',
-          visitors: 0
-        };    // Format user stats
-    const users = userStatsResult.data
-      ? userStatsResult.data.map(member => ({
-          id: member.id,
-          name: member.name,
-          color: member.avatar_color,
-          countriesVisited: member.visited_count
-        }))
-      : [];
-    
+
+    // Most visited country among the user's own visits
+    const countryCounts = new Map<number, { name: string; code: string; count: number }>();
+    for (const visit of visits) {
+      const country = visit.countries as any;
+      if (!country) continue;
+      const existing = countryCounts.get(visit.country_id);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        countryCounts.set(visit.country_id, { name: country.country_name, code: country.country_code, count: 1 });
+      }
+    }
+    let mostVisitedCountry: { countryId?: number; countryName: string; countryCode?: string; visitors: number } = {
+      countryName: 'No countries visited yet',
+      visitors: 0
+    };
+    if (countryCounts.size > 0) {
+      const [topId, top] = Array.from(countryCounts.entries()).reduce((a, b) => (b[1].count > a[1].count ? b : a));
+      mostVisitedCountry = { countryId: topId, countryName: top.name, countryCode: top.code, visitors: top.count };
+    }
+
+    // Family member stats for the users array
+    const users = familyMembers.map(member => ({
+      id: member.id,
+      name: member.name,
+      color: member.avatar_color,
+      countriesVisited: visitsByMember.get(member.id) || 0
+    }));
+
     // Format top countries
-    const topCountries = topCountriesResult.data
-      ? topCountriesResult.data.map(country => ({
-          id: country.id,
-          countryName: country.country_name,
-          countryCode: country.country_code,
-          visitors: Array.isArray(country.visitor_count) ? country.visitor_count.length : country.visitor_count
-        }))
-        .filter(country => country.visitors > 0)
-      : [];
-      // Return formatted stats
+    const topCountries = (topCountriesResult.data || [])
+      .map(country => ({
+        id: country.id,
+        countryName: country.country_name,
+        countryCode: country.country_code,
+        visitors: Array.isArray(country.visitor_count) ? country.visitor_count.length : country.visitor_count
+      }))
+      .filter(country => country.visitors > 0);
+
     return NextResponse.json({
       general: {
         totalCountries,
-        totalUsers: totalFamilyMembers,
-        totalVisits,
+        totalUsers: familyMembers.length,
+        totalVisits: visits.length,
         topTraveler,
         mostVisitedCountry,
       },
       users,
       topCountries,
+      regions: regionsResult,
     });
   } catch (error: any) {
     console.error('Error fetching stats:', error);
-    // Provide mock data in case of error
-    return NextResponse.json({
-      general: {
-        totalCountries: 0,
-        totalUsers: 0,
-        totalVisits: 0,
-        topTraveler: {
-          name: 'Error occurred',
-          visits: 0
-        },
-        mostVisitedCountry: {
-          countryName: 'Error occurred',
-          visitors: 0
-        },
-      },
-      users: [],
-      topCountries: [],
-    });
+    return NextResponse.json({ error: 'Failed to fetch stats', details: error.message }, { status: 500 });
   }
 }

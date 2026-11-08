@@ -30,7 +30,13 @@ type MostVisitedCountry = {
   visitors: number;
 };
 
-type Stats = {
+export type RegionStats = {
+  region: string;
+  totalInRegion: number;
+  visitedInRegion: number;
+};
+
+export type Stats = {
   general: {
     totalCountries: number;
     totalUsers: number;
@@ -40,6 +46,7 @@ type Stats = {
   };
   users: UserStats[];
   topCountries: CountryStats[];
+  regions?: RegionStats[];
 };
 
 export function useStats() {
