@@ -38,9 +38,9 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
   if (loading) {
     return (
       <div className="flex flex-wrap gap-3" aria-busy="true">
-        <div className="h-14 w-36 animate-shimmer rounded-2xl" />
-        <div className="h-14 w-36 animate-shimmer rounded-2xl" />
-        <div className="h-14 w-36 animate-shimmer rounded-2xl" />
+        <div className="h-14 w-36 grow animate-shimmer rounded-2xl" />
+        <div className="h-14 w-36 grow animate-shimmer rounded-2xl" />
+        <div className="h-14 w-36 grow animate-shimmer rounded-2xl" />
       </div>
     );
   }
@@ -84,7 +84,7 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.97 }}
             aria-pressed={allSelected}
-            className="relative flex items-center space-x-3 rounded-2xl border border-teal-400/40 bg-teal-400/15 px-4 py-3 text-left"
+            className="relative flex grow items-center space-x-3 rounded-2xl border border-teal-400/40 bg-teal-400/15 px-4 py-3 text-left"
             style={{
               boxShadow: allSelected ? '0 0 0 2px #020617, 0 0 0 4px #2dd4bf' : 'none',
             }}
@@ -104,7 +104,7 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.97 }}
           aria-pressed={selectedMemberId === null}
-          className="relative flex items-center space-x-3 rounded-2xl px-4 py-3 text-left transition-shadow"
+          className="relative flex grow items-center space-x-3 rounded-2xl px-4 py-3 text-left transition-shadow"
           style={{
             backgroundColor: currentUser.avatar_color,
             color: '#0f172a',
@@ -134,7 +134,7 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
               exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
               transition={{ type: 'spring', stiffness: 320, damping: 26 }}
               aria-pressed={selectedMemberId === member.id}
-              className="group relative flex items-center space-x-3 rounded-2xl px-4 py-3 text-left"
+              className="group relative flex grow items-center space-x-3 rounded-2xl px-4 py-3 text-left"
               style={{
                 backgroundColor: member.avatarColor || '#8b5cf6',
                 color: '#0f172a',
@@ -158,7 +158,7 @@ export default function FamilyMemberTabs({ familyMembers, loading, selectedMembe
                     handleDeleteMember(member.id, member.name, e as unknown as React.MouseEvent);
                   }
                 }}
-                className="ml-1 rounded-full bg-black/15 p-1 opacity-0 transition-opacity hover:bg-black/25 focus-visible:opacity-100 group-hover:opacity-100"
+                className="ml-1 rounded-full bg-black/20 p-1 opacity-100 transition-opacity hover:bg-black/35 focus-visible:opacity-100 [email protected]:opacity-0 [email protected]:group-hover:opacity-100"
               >
                 <X className="h-3 w-3" />
               </span>
